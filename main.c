@@ -63,7 +63,7 @@ void benchmark(int quantity) {
 
 	clock_t start=clock(), diff;
 
-	for (int i=0; i<quantity/6; i++) {
+	for (int i=0; i<quantity/6; ++i) {
 		applyMove(&cube,0);
 		applyMove(&cube,1);
 		applyMove(&cube,2);
@@ -75,25 +75,17 @@ void benchmark(int quantity) {
 	diff=clock()-start;
 	int msec=diff*1000/CLOCKS_PER_SEC;
 
-	printf("\t%d easy moves (U*/D*) in %d.%d sec\n",quantity,msec/1000,msec%1000);
+	printf("\t%d [Ux/Dx] moves per second per thread\n",quantity/msec*1000);
 
-	start=clock();
-	
-	for (int i=0; i<quantity; i++) {
-		rand();
-	}
-	
-	diff=clock()-start;
-	msec=diff*1000/CLOCKS_PER_SEC;
+	printBinary(cube.EPCO);
+	printBinary(cube.CPEOCN);
 
-	printf("\t%d rand() in %d.%d sec\n",quantity,msec/1000,msec%1000);
-	
 }
 
 
 int main() {
 	
-	benchmark(1e8);
+	benchmark(1e9);
 
 	return 0;
 }
