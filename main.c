@@ -126,47 +126,78 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<10)&cube->CPEOCN)<<8)|
 				(0x3c03fc03f3f0f3ff&cube->CPEOCN);
 			break;
+		case 9: // L 
+			cube->EPCO=(((0xfUL<<48)&cube->EPCO)>>16)|
+				(((0xfUL<<32)&cube->EPCO)>>16)|
+				(((0xfUL<<16)&cube->EPCO)<<28)|
+				(((0XfUL<<44)&cube->EPCO)<<4)|
+				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+1)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+1))<<8|
+				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+2)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+2))|
+				(3&((((((0x3UL)&cube->EPCO))+1)>>2)+(((0x3UL)&cube->EPCO))+1))<<6|
+				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+2)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+2))<<14|
+				(0xfff00ff0fff03c3c&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>12)|
+				(((0xfUL<<46)&cube->CPEOCN)>>16)|
+				(((0xfUL<<30)&cube->CPEOCN)<<12)|
+				(((0xfUL<<42)&cube->CPEOCN)<<16)|
+				(((0x3UL<<22)&cube->CPEOCN)>>8)|
+				(((0x3UL<<14)&cube->CPEOCN)>>8)|
+				(((0x3UL<<6)&cube->CPEOCN)<<14)|
+				(((0x3UL<<20)&cube->CPEOCN)<<2)|
+				(0x03fc03fc3f0f3f3f&cube->CPEOCN);
+			break;
+		case 11: // L' 
+			cube->EPCO=(((0xfUL<<48)&cube->EPCO)>>16)|
+				(((0xfUL<<32)&cube->EPCO)>>16)|
+				(((0xfUL<<16)&cube->EPCO)<<28)|
+				(((0XfUL<<44)&cube->EPCO)<<4)|
+				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+1)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+1))<<8|
+				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+2)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+2))|
+				(3&((((((0x3UL)&cube->EPCO))+1)>>2)+(((0x3UL)&cube->EPCO))+1))<<6|
+				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+2)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+2))<<14|
+				(0xfff00ff0fff03c3c&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>12)|
+				(((0xfUL<<46)&cube->CPEOCN)>>16)|
+				(((0xfUL<<30)&cube->CPEOCN)<<12)|
+				(((0xfUL<<42)&cube->CPEOCN)<<16)|
+				(((0x3UL<<22)&cube->CPEOCN)>>8)|
+				(((0x3UL<<14)&cube->CPEOCN)>>8)|
+				(((0x3UL<<6)&cube->CPEOCN)<<14)|
+				(((0x3UL<<20)&cube->CPEOCN)<<2)|
+				(0x03fc03fc3f0f3f3f&cube->CPEOCN);
+			break;
 	
-	
-	
-	//0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 11 11 11 11 11 11 11 11 
-	
-	
-	
+
+
 	
 	
 	}
 }
 
-void benchmark(long quantity) {
-
+int runBenchmark(long quantity, char move) {
 	struct CUBE cube;
 	revertCube(&cube);
-
-	clock_t start=clock(), diff;
-	for (int i=0; i<quantity/6; ++i) {
-		applyMove(&cube,0);
-		applyMove(&cube,1);
-		applyMove(&cube,2);
-		applyMove(&cube,3);
-		applyMove(&cube,4);
-		applyMove(&cube,5);
-	}
-	diff=clock()-start;
-	int msec=diff*1000/CLOCKS_PER_SEC;
-	printf("\t%d [Ux/Dx] moves per second per thread\n",quantity/msec*1000);
-
-	start=clock();
+        clock_t start=clock();
 	for (int i=0; i<quantity/3; ++i) {
-		applyMove(&cube,6);
-		applyMove(&cube,7);
-		applyMove(&cube,8);
+		applyMove(&cube,move);
+		applyMove(&cube,move+1);
+		applyMove(&cube,move+2);
 	}
-	diff=clock()-start;
-	msec=diff*1000/CLOCKS_PER_SEC;
-	printf("\t%d [Rx] moves per second per thread\n",quantity/msec*1000);
-
+	clock_t diff=clock()-start;
+	int msec=diff*1000/CLOCKS_PER_SEC;
 	printCube(&cube);
+	return quantity/msec*1000;
+}
+
+void benchmark() {
+
+	printf("\t%d [Ux] moves per second per thread\n",runBenchmark(1e8,0));
+	
+	printf("\t%d [Dx] moves per second per thread\n",runBenchmark(1e8,3));
+	
+	printf("\t%d [Rx] moves per second per thread\n",runBenchmark(1e8,6));;
+	
+	//printCube(&cube);
 
 }
 
@@ -186,9 +217,9 @@ void testMove(char move) {
 
 int main() {
 	
-	benchmark(1e9);
+	benchmark();
 
-	//testMove(6);
+	//testMove(9);
 
 	return 0;
 }
