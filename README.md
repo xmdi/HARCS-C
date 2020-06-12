@@ -4,6 +4,6 @@
 
 very fast and lightweight method analysis toolkit for 3x3x3 rubik's cube
 
-compile with `gcc main.c -O3`
+compile with `clang main.c -O3`
 
-why no makefile? because i hate them, and they are pointless.
+clang seems much better than gcc in the benchmarks
