@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 struct CUBE {
@@ -17,19 +18,19 @@ void binaryOut(uint64_t number) {
 void printCube(struct CUBE* cube) {
 	printf("\tEP:");
 	for (int i=0; i<12; ++i)
-		printf(" %x",0xf&(cube->EPCO>>(60-4*i)));
+		printf(" %lx",0xf&(cube->EPCO>>(60-4*i)));
 	printf("\n\tEO:");
 	for (int i=0; i<12; ++i)
-		printf(" %x",0x3&(cube->CPEOCN>>(28-2*i)));
+		printf(" %lx",0x3&(cube->CPEOCN>>(28-2*i)));
 	printf("\n\tCP:");
 	for (int i=0; i<8; ++i)
-		printf(" %x",0xf&(cube->CPEOCN>>(58-4*i)));
+		printf(" %lx",0xf&(cube->CPEOCN>>(58-4*i)));
 	printf("\n\tCO:");
 	for (int i=0; i<8; ++i)
-		printf(" %x",0x3&(cube->EPCO>>(14-2*i)));
+		printf(" %lx",0x3&(cube->EPCO>>(14-2*i)));
 	printf("\n\tCN:");
 	for (int i=0; i<2; ++i)
-		printf(" %x",0x7&(cube->CPEOCN>>(3-3*i)));
+		printf(" %lx",0x7&(cube->CPEOCN>>(3-3*i)));
 	printf("\n");
 }
 
@@ -42,7 +43,7 @@ void revertCube(struct CUBE* cube) {
 
 void applyMove(struct CUBE* cube, char move) {
 	switch(move) {
-		case 0: // U
+		case 1: // U
 			cube->EPCO=(((0xfUL<<48)&cube->EPCO)<<12)|
 				(((0xfffUL<<52)&cube->EPCO)>>4)|
 				(((0x3UL<<8)&cube->EPCO)<<6)|
@@ -54,7 +55,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfcUL<<22)&cube->CPEOCN)>>2)|
 				(0x3fffc03fffff&cube->CPEOCN);
 			break;
-		case 1: // U2
+		case 2: // U2
 			cube->EPCO=(((0xffUL<<48)&cube->EPCO)<<8)|
 				(((0xffUL<<56)&cube->EPCO)>>8)|
 				(((0xfUL<<8)&cube->EPCO)<<4)|
@@ -66,7 +67,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<26)&cube->CPEOCN)>>4)|
 				(0x3fffc03fffff&cube->CPEOCN);
 			break;
-		case 2: // U'
+		case 3: // U'
 			cube->EPCO=(((0xfffUL<<48)&cube->EPCO)<<4)|
 				(((0xfUL<<60)&cube->EPCO)>>12)|
 				(((0x3fUL<<8)&cube->EPCO)<<2)|
@@ -78,7 +79,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<28)&cube->CPEOCN)>>6)|
 				(0x3fffc03fffff&cube->CPEOCN);
 			break;
-		case 3: // D 
+		case 4: // D 
 			cube->EPCO=(((0xfffUL<<16)&cube->EPCO)<<4)|
 				(((0xfUL<<28)&cube->EPCO)>>12)|
 				(((0x3fUL)&cube->EPCO)<<2)|
@@ -90,7 +91,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<12)&cube->CPEOCN)>>6)|
 				(0x3fffc0003fffc03f&cube->CPEOCN);
 			break;
-		case 4: // D2
+		case 5: // D2
 			cube->EPCO=(((0xffUL<<16)&cube->EPCO)<<8)|
 				(((0xffUL<<24)&cube->EPCO)>>8)|
 				(((0xfUL)&cube->EPCO)<<4)|
@@ -102,7 +103,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<10)&cube->CPEOCN)>>4)|
 				(0x3fffc0003fffc03f&cube->CPEOCN);
 			break;
-		case 5: // D'
+		case 6: // D'
 			cube->EPCO=(((0xfUL<<16)&cube->EPCO)<<12)|
 				(((0xfffUL<<20)&cube->EPCO)>>4)|
 				(((0x3UL)&cube->EPCO)<<6)|
@@ -114,7 +115,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfcUL<<6)&cube->CPEOCN)>>2)|
 				(0x3fffc0003fffc03f&cube->CPEOCN);
 			break;
-		case 6: // R 
+		case 7: // R 
 			cube->EPCO=(((0xfUL<<36)&cube->EPCO)<<20)|
 				(((0xfUL<<56)&cube->EPCO)>>16)|
 				(((0xfUL<<40)&cube->EPCO)>>16)|
@@ -134,7 +135,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<10)&cube->CPEOCN)<<6)|
 				(0x3c03fc03f3f0f3ff&cube->CPEOCN);
 			break;
-		case 7: // R2 
+		case 8: // R2 
 			cube->EPCO=(((0xfUL<<36)&cube->EPCO)<<4)|
 				(((0xfUL<<56)&cube->EPCO)>>32)|
 				(((0xfUL<<40)&cube->EPCO)>>4)|
@@ -154,7 +155,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<10)&cube->CPEOCN)<<16)|
 				(0x3c03fc03f3f0f3ff&cube->CPEOCN);
 			break;
-		case 8: // R' 
+		case 9: // R' 
 			cube->EPCO=(((0xfUL<<36)&cube->EPCO)>>12)|
 				(((0xfUL<<56)&cube->EPCO)>>20)|
 				(((0xfUL<<40)&cube->EPCO)<<16)|
@@ -174,7 +175,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<10)&cube->CPEOCN)<<8)|
 				(0x3c03fc03f3f0f3ff&cube->CPEOCN);
 			break;
-		case 9: // L 
+		case 10: // L 
 			cube->EPCO=(((0xfUL<<48)&cube->EPCO)>>16)|
 				(((0xfUL<<32)&cube->EPCO)>>16)|
 				(((0xfUL<<16)&cube->EPCO)<<28)|
@@ -194,7 +195,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<20)&cube->CPEOCN)<<2)|
 				(0x03fc03fc3f0f3f3f&cube->CPEOCN);
 			break;
-		case 10: // L2
+		case 11: // L2
 			cube->EPCO=(((0xfUL<<48)&cube->EPCO)>>32)|
 				(((0xfUL<<32)&cube->EPCO)<<12)|
 				(((0xfUL<<16)&cube->EPCO)<<32)|
@@ -214,7 +215,7 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<20)&cube->CPEOCN)>>6)|
 				(0x03fc03fc3f0f3f3f&cube->CPEOCN);
 			break;
-		case 11: // L' 
+		case 12: // L' 
 			cube->EPCO=(((0xfUL<<48)&cube->EPCO)>>4)|
 				(((0xfUL<<32)&cube->EPCO)<<16)|
 				(((0xfUL<<16)&cube->EPCO)<<16)|
@@ -234,11 +235,178 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0x3UL<<20)&cube->CPEOCN)>>14)|
 				(0x03fc03fc3f0f3f3f&cube->CPEOCN);
 			break;
-	
+		case 13: // F 
+			cube->EPCO=(((0xfUL<<52)&cube->EPCO)>>16)|
+				(((0xfUL<<36)&cube->EPCO)>>16)|
+				(((0xfUL<<20)&cube->EPCO)<<12)|
+				(((0XfUL<<32)&cube->EPCO)<<20)|
+				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+1)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+1))<<10|
+				(3&((((((0x3UL<<10)&cube->EPCO)>>10)+2)>>2)+(((0x3UL<<10)&cube->EPCO)>>10)+2))<<2|
+				(3&((((((0x3UL<<2)&cube->EPCO)>>2)+1)>>2)+(((0x3UL<<2)&cube->EPCO)>>2)+1))|
+				(3&((((((0x3UL)&cube->EPCO))+2)>>2)+(((0x3UL)&cube->EPCO))+2))<<8|
+				(0xff0fff00ff0ff0f0&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)<<4)|
+				(((0xfUL<<50)&cube->CPEOCN)>>16)|
+				(((0xfUL<<34)&cube->CPEOCN)>>4)|
+				(((0xfUL<<30)&cube->CPEOCN)<<16)|
+				((((0x1UL<<24)&cube->CPEOCN)<<1)^((0x3UL<<24)&cube->CPEOCN))>>8|
+				((((0x1UL<<16)&cube->CPEOCN)<<1)^((0x3UL<<16)&cube->CPEOCN))>>8|
+				((((0x1UL<<8)&cube->CPEOCN)<<1)^((0x3UL<<8)&cube->CPEOCN))<<6|
+				((((0x1UL<<14)&cube->CPEOCN)<<1)^((0x3UL<<14)&cube->CPEOCN))<<10|
+				(0x3fc03fc03cfc3cff&cube->CPEOCN);
+			break;
+		case 14: // F2 
+			cube->EPCO=(((0xfUL<<52)&cube->EPCO)>>32)|
+				(((0xfUL<<36)&cube->EPCO)>>4)|
+				(((0xfUL<<20)&cube->EPCO)<<32)|
+				(((0XfUL<<32)&cube->EPCO)<<4)|
+				(((0x3UL<<8)&cube->EPCO)>>6)|
+				(((0x3UL<<10)&cube->EPCO)>>10)|
+				(((0x3UL<<2)&cube->EPCO)<<6)|
+				(((0x3UL)&cube->EPCO)<<10)|
+				(0xff0fff00ff0ff0f0&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)>>12)|
+				(((0xfUL<<50)&cube->CPEOCN)>>20)|
+				(((0xfUL<<34)&cube->CPEOCN)<<12)|
+				(((0xfUL<<30)&cube->CPEOCN)<<20)|
+				(((0x3UL<<24)&cube->CPEOCN))>>16|
+				(((0x3UL<<16)&cube->CPEOCN))>>2|
+				(((0x3UL<<8)&cube->CPEOCN))<<16|
+				(((0x3UL<<14)&cube->CPEOCN))<<2|
+				(0x3fc03fc03cfc3cff&cube->CPEOCN);
+			break;
+		case 15: // F' 
+			cube->EPCO=(((0xfUL<<52)&cube->EPCO)>>20)|
+				(((0xfUL<<36)&cube->EPCO)<<16)|
+				(((0xfUL<<20)&cube->EPCO)<<16)|
+				(((0XfUL<<32)&cube->EPCO)>>12)|
+				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+1)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+1))|
+				(3&((((((0x3UL<<10)&cube->EPCO)>>10)+2)>>2)+(((0x3UL<<10)&cube->EPCO)>>10)+2))<<8|
+				(3&((((((0x3UL<<2)&cube->EPCO)>>2)+1)>>2)+(((0x3UL<<2)&cube->EPCO)>>2)+1))<<10|
+				(3&((((((0x3UL)&cube->EPCO))+2)>>2)+(((0x3UL)&cube->EPCO))+2))<<2|
+				(0xff0fff00ff0ff0f0&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)>>16)|
+				(((0xfUL<<50)&cube->CPEOCN)>>4)|
+				(((0xfUL<<34)&cube->CPEOCN)<<16)|
+				(((0xfUL<<30)&cube->CPEOCN)<<4)|
+				((((0x1UL<<24)&cube->CPEOCN)<<1)^((0x3UL<<24)&cube->CPEOCN))>>10|
+				((((0x1UL<<16)&cube->CPEOCN)<<1)^((0x3UL<<16)&cube->CPEOCN))<<8|
+				((((0x1UL<<8)&cube->CPEOCN)<<1)^((0x3UL<<8)&cube->CPEOCN))<<8|
+				((((0x1UL<<14)&cube->CPEOCN)<<1)^((0x3UL<<14)&cube->CPEOCN))>>6|
+				(0x3fc03fc03cfc3cff&cube->CPEOCN);
+			break;
+		case 16: // B 
+			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>16)|
+				(((0xfUL<<44)&cube->EPCO)>>16)|
+				(((0xfUL<<28)&cube->EPCO)<<12)|
+				(((0XfUL<<40)&cube->EPCO)<<20)|
+				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+2)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+2))<<6|
+				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+1)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+1))<<4|
+				(3&((((((0x3UL<<4)&cube->EPCO)>>4)+2)>>2)+(((0x3UL<<4)&cube->EPCO)>>4)+2))<<12|
+				(3&((((((0x3UL<<12)&cube->EPCO)>>12)+1)>>2)+(((0x3UL<<12)&cube->EPCO)>>12)+1))<<14|
+				(0x0fff00ff0fff0f0f&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>16)|
+				(((0xfUL<<42)&cube->CPEOCN)>>4)|
+				(((0xfUL<<38)&cube->CPEOCN)<<16)|
+				(((0xfUL<<54)&cube->CPEOCN)<<4)|
+				((((0x1UL<<28)&cube->CPEOCN)<<1)^((0x3UL<<28)&cube->CPEOCN))>>8|
+				((((0x1UL<<20)&cube->CPEOCN)<<1)^((0x3UL<<20)&cube->CPEOCN))>>8|
+				((((0x1UL<<12)&cube->CPEOCN)<<1)^((0x3UL<<12)&cube->CPEOCN))<<6|
+				((((0x1UL<<18)&cube->CPEOCN)<<1)^((0x3UL<<18)&cube->CPEOCN))<<10|
+				(0x003fc03fcfc3cfff&cube->CPEOCN);
+			break;
+		case 17: // B2 
+			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>32)|
+				(((0xfUL<<44)&cube->EPCO)>>4)|
+				(((0xfUL<<28)&cube->EPCO)<<32)|
+				(((0XfUL<<40)&cube->EPCO)<<4)|
+				(((0x3UL<<14)&cube->EPCO)>>10)|
+				(((0x3UL<<6)&cube->EPCO)<<6)|
+				(((0x3UL<<4)&cube->EPCO)<<10)|
+				(((0x3UL<<12)&cube->EPCO)>>6)|
+				(0x0fff00ff0fff0f0f&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>20)|
+				(((0xfUL<<42)&cube->CPEOCN)<<12)|
+				(((0xfUL<<38)&cube->CPEOCN)<<20)|
+				(((0xfUL<<54)&cube->CPEOCN)>>12)|
+				(((0x3UL<<28)&cube->CPEOCN))>>16|
+				(((0x3UL<<20)&cube->CPEOCN))>>2|
+				(((0x3UL<<12)&cube->CPEOCN))<<16|
+				(((0x3UL<<18)&cube->CPEOCN))<<2|
+				(0x003fc03fcfc3cfff&cube->CPEOCN);
+			break;
+		case 18: // B' 
+			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>20)|
+				(((0xfUL<<44)&cube->EPCO)<<16)|
+				(((0xfUL<<28)&cube->EPCO)<<16)|
+				(((0XfUL<<40)&cube->EPCO)>>12)|
+				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+2)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+2))<<12|
+				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+1)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+1))<<14|
+				(3&((((((0x3UL<<4)&cube->EPCO)>>4)+2)>>2)+(((0x3UL<<4)&cube->EPCO)>>4)+2))<<6|
+				(3&((((((0x3UL<<12)&cube->EPCO)>>12)+1)>>2)+(((0x3UL<<12)&cube->EPCO)>>12)+1))<<4|
+				(0x0fff00ff0fff0f0f&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>4)|
+				(((0xfUL<<42)&cube->CPEOCN)<<16)|
+				(((0xfUL<<38)&cube->CPEOCN)<<4)|
+				(((0xfUL<<54)&cube->CPEOCN)>>16)|
+				((((0x1UL<<28)&cube->CPEOCN)<<1)^((0x3UL<<28)&cube->CPEOCN))>>10|
+				((((0x1UL<<20)&cube->CPEOCN)<<1)^((0x3UL<<20)&cube->CPEOCN))<<8|
+				((((0x1UL<<12)&cube->CPEOCN)<<1)^((0x3UL<<12)&cube->CPEOCN))<<8|
+				((((0x1UL<<18)&cube->CPEOCN)<<1)^((0x3UL<<18)&cube->CPEOCN))>>6|
+				(0x003fc03fcfc3cfff&cube->CPEOCN);
+			break;
+	}
+}
 
+void append(char *s, char c) {
+	int l=strlen(s);
+	s[l]=c;
+	s[l+1]='\0';
+}
 
-	
-	
+char* readableSequence(int sequence) {
+	char *moves[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
+
+	char out[100];
+	for (int i=0; i<10; i++) {
+		char buffer=((sequence&(63<<(6*i)))>>(6*i));
+		if (buffer) {
+			append(out,*moves[buffer-1]);
+		}
+	}
+	return out;
+}
+
+void addLayers(char movegroup, int baseSequence, char depth, int *candidates, int *c) {
+	if (movegroup==1) {
+		for (int i=1; i<19; i++) {
+			// currently makes sure no moves that ought to cancel U U2
+			// add functionality to assure U never follows D, etc
+			if ((depth==0)|(((i-1)/3)!=((((baseSequence&(63<<(6*depth-1)))>>(6*depth-1))-1)/3))) {
+				candidates[(*c)++]=baseSequence+(i<<(6*depth));
+			}
+		}
+	}
+}
+
+void createSequences(char movegroup, char depth) {
+	int candidates[1000]={0};
+	int c=1;
+	int start=0;
+	int end=1;
+	for (char i=0; i<depth; i++) {
+		for (int s=start; s<end; s++) {
+			addLayers(movegroup,candidates[s],i,candidates,&c);
+		}
+		start=end;
+		end=c;
+	}
+
+	for (int i=0; i<1000; i++) {
+		printf("\t%d\t%s\n",i,readableSequence(candidates[i]));
+		
+		/*binaryOut(candidates[i]);
+		printf("\n");*/
 	}
 }
 
@@ -259,14 +427,18 @@ int runBenchmark(long quantity, char move) {
 
 void benchmark() {
 
-	printf("\t%d [Ux] moves per second per thread\n",runBenchmark(1e8,0));
+	printf("\t%d [Ux] moves per second per thread\n",runBenchmark(1e8,1));
 	
-	//printf("\t%d [Dx] moves per second per thread\n",runBenchmark(1e8,3));
+	printf("\t%d [Dx] moves per second per thread\n",runBenchmark(1e8,4));
 	
-	//printf("\t%d [Rx] moves per second per thread\n",runBenchmark(1e8,6));;
+	printf("\t%d [Rx] moves per second per thread\n",runBenchmark(1e8,7));;
 	
-	//printCube(&cube);
-
+	printf("\t%d [Lx] moves per second per thread\n",runBenchmark(1e8,10));;
+	
+	printf("\t%d [Fx] moves per second per thread\n",runBenchmark(1e8,13));;
+	
+	printf("\t%d [Bx] moves per second per thread\n",runBenchmark(1e8,16));;
+	
 }
 
 void testMove(char move) {
@@ -285,9 +457,11 @@ void testMove(char move) {
 
 int main() {
 	
-	benchmark();
+//	benchmark();
 
-	//testMove(9);
+//	testMove(16);
+
+	createSequences(1,2);
 
 	return 0;
 }
