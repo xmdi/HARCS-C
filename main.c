@@ -8,6 +8,23 @@ struct CUBE {
 	uint64_t EPCO,CPEOCN;
 };
 
+typedef struct entry_t {
+	uint64_t EPCO,CPEOCN,sequence;
+	struct entry_t *next;
+} entry_t;
+
+typedef struct {
+	entry_t **entries;
+} ht_t;
+
+long power(char base, char exponent) {
+	long out=1;
+	for (int i=0; i<exponent; i++) {
+		out=out*base;	
+	}
+	return out;
+}
+
 void binaryOut(uint64_t number) {
 	if (number) {
 		binaryOut(number>>1);
@@ -358,39 +375,132 @@ void applyMove(struct CUBE* cube, char move) {
 	}
 }
 
-void append(char *s, char c) {
-	int l=strlen(s);
-	s[l]=c;
-	s[l+1]='\0';
-}
-
-char* readableSequence(int sequence) {
-	char *moves[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
-
-	char out[100];
+char *readableSequence(uint64_t sequence) {
+	char *moves[18]={"U ","U2 ","U' ","D ","D2 ","D' ",
+		"R ","R2 ","R' ","L ","L2 ","L' ",
+		"F ","F2 ","F' ","B ","B2 ","B' "};
+	char out[100]={0};
 	for (int i=0; i<10; i++) {
 		char buffer=((sequence&(63<<(6*i)))>>(6*i));
 		if (buffer) {
-			append(out,*moves[buffer-1]);
+			strcat(out,moves[buffer-1]);
+		}
+		else {
+			break;
 		}
 	}
 	return out;
 }
 
-void addLayers(char movegroup, int baseSequence, char depth, int *candidates, int *c) {
+void addLayers(char movegroup, uint64_t baseSequence, char depth, uint64_t *candidates, int *c) {
+	const unsigned char axes[]={1,1,0,0,2,2};
 	if (movegroup==1) {
 		for (int i=1; i<19; i++) {
-			// currently makes sure no moves that ought to cancel U U2
-			// add functionality to assure U never follows D, etc
-			if ((depth==0)|(((i-1)/3)!=((((baseSequence&(63<<(6*depth-1)))>>(6*depth-1))-1)/3))) {
+			// currently makes sure no moves that ought to cancel U U2 and assures U never follows D, etc
+			if (depth==0) {
 				candidates[(*c)++]=baseSequence+(i<<(6*depth));
 			}
+			else if (((i-1)/3)!=((((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1)))-1)/3)) {
+				if (!((i<((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1))))&(axes[(i-1)/3]==axes[(((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1)))-1)/3]))) {
+					candidates[(*c)++]=baseSequence+(i<<(6*depth));
+				}
+			}
+		} 
+	}
+}
+
+void applySequence(uint64_t sequence, struct CUBE* cube) {
+	for (int m=0; m<10; m++) {
+		if ((sequence&(63<<(6*m)))>>(6*m)) {
+			applyMove(cube,(sequence&(63<<(6*m)))>>(6*m));
+		}
+		else {
+			break;
 		}
 	}
 }
 
-void createSequences(char movegroup, char depth) {
-	int candidates[1000]={0};
+unsigned int hash(const unsigned char Nbits, struct CUBE* cube) {
+	uint64_t mask=0;
+	for (int i=0; i<Nbits; i++) {
+		mask+=(1<<i);
+	}
+	uint64_t key0=cube->EPCO+cube->CPEOCN;
+	uint64_t key=0;
+	for (int i=0; (i*Nbits)<64; i++)  {
+		key+=((key0&(mask<<(Nbits*i)))>>(Nbits*i));
+	}
+	return mask&key;
+}
+
+ht_t *htCreate(int c) {
+	ht_t *hashtable = malloc(sizeof(ht_t)); 
+	hashtable->entries=malloc(sizeof(entry_t*)*c);
+	for (int i=0; i<c; i++) {
+		hashtable->entries[i]=NULL;
+	}
+	return hashtable;
+}
+
+entry_t *htPair(uint64_t *EPCO, uint64_t *CPEOCN, uint64_t *sequence) {
+	entry_t *entry=malloc(sizeof(entry_t)*1);
+	entry->EPCO=*(uint64_t*)malloc(sizeof(uint64_t)*1);
+	entry->CPEOCN=*(uint64_t*)malloc(sizeof(uint64_t)*1);
+	entry->sequence=*(int*)malloc(sizeof(uint64_t)*1);
+
+
+	entry->EPCO=*EPCO;
+	entry->CPEOCN=*CPEOCN;
+	entry->sequence=*sequence;
+	entry->next=NULL;
+	return entry;
+}
+
+void htInsert(ht_t *hashtable, unsigned int key, uint64_t *EPCO, uint64_t *CPEOCN, uint64_t *sequence) {
+	entry_t *entry=hashtable->entries[key];
+
+	if (entry==NULL) {
+		hashtable->entries[key]=htPair(EPCO,CPEOCN,sequence);
+		return;
+	}
+
+	entry_t *prev;
+
+	while (entry!=NULL) {
+
+		prev=entry;
+		entry=prev->next;
+	}
+
+	prev->next=htPair(EPCO,CPEOCN,sequence);
+}
+
+uint64_t *htRetrieve(ht_t *hashtable, unsigned int key, uint64_t *EPCO, uint64_t *CPEOCN) {
+
+	entry_t *entry=hashtable->entries[key];
+
+	if (entry==NULL) {
+		return NULL;
+	}
+	
+	while (entry!=NULL) {
+		if ((entry->EPCO==*EPCO)&(entry->CPEOCN==*CPEOCN)) {
+			return &entry->sequence;
+		}
+		entry=entry->next;
+	}
+	return NULL;
+}
+
+void createTable(char movegroup, char depth) {
+	// generate candidate move sequences
+
+
+	const unsigned char movesInGroup[]={18};
+	//uint64_t sequences[1+power(movesInGroup[movegroup-1],depth)];
+	uint64_t *candidates;
+	candidates = (uint64_t*)malloc((1+power(movesInGroup[movegroup-1],depth))*sizeof(uint64_t));
+
 	int c=1;
 	int start=0;
 	int end=1;
@@ -401,13 +511,51 @@ void createSequences(char movegroup, char depth) {
 		start=end;
 		end=c;
 	}
-
-	for (int i=0; i<1000; i++) {
-		printf("\t%d\t%s\n",i,readableSequence(candidates[i]));
 		
-		/*binaryOut(candidates[i]);
-		printf("\n");*/
+	//printf("\n%p",candidates);
+	//uint64_t *sequences = (uint64_t*)realloc(candidates,c);
+
+	//printf("\n%p",sequences);
+
+	uint64_t sequences[c];
+	for (int i=0;i<c;i++){
+		sequences[i]=candidates[i];
+
 	}
+	free(candidates);
+
+
+	ht_t *ht = htCreate(c);
+
+	struct CUBE cube;
+
+	unsigned char tmp=0;
+	while (power(2,tmp)<=c) {
+		tmp++;
+	}
+	const unsigned char Nbits=tmp-1;
+
+	for (int i=0; i<c; i++) {
+		revertCube(&cube);
+		applySequence(sequences[i],&cube);
+		unsigned int key=hash(Nbits,&cube);
+		
+		htInsert(ht,key,&cube.EPCO,&cube.CPEOCN,&sequences[i]);
+
+//		printf("\n %d %u %s",i,key,readableSequence(*htRetrieve(ht,key,&cube.EPCO,&cube.CPEOCN)));
+
+	}
+
+/*
+
+	revertCube(&cube);
+	applyMove(&cube,1);
+	applyMove(&cube,1);
+	applyMove(&cube,1);
+
+	unsigned int key=hash(Nbits,&cube);
+	printf(" %u %s",key,readableSequence(*htRetrieve(ht,key,&cube.EPCO,&cube.CPEOCN)));
+*/
 }
 
 int runBenchmark(long quantity, char move) {
@@ -426,42 +574,32 @@ int runBenchmark(long quantity, char move) {
 }
 
 void benchmark() {
-
 	printf("\t%d [Ux] moves per second per thread\n",runBenchmark(1e8,1));
-	
 	printf("\t%d [Dx] moves per second per thread\n",runBenchmark(1e8,4));
-	
 	printf("\t%d [Rx] moves per second per thread\n",runBenchmark(1e8,7));;
-	
 	printf("\t%d [Lx] moves per second per thread\n",runBenchmark(1e8,10));;
-	
 	printf("\t%d [Fx] moves per second per thread\n",runBenchmark(1e8,13));;
-	
 	printf("\t%d [Bx] moves per second per thread\n",runBenchmark(1e8,16));;
-	
 }
 
 void testMove(char move) {
-
 	struct CUBE cube;
 	revertCube(&cube);
 	printf("\n BEFORE:\n");
 	printCube(&cube);
-
 	applyMove(&cube,move);
-
 	printf("\n AFTER:\n");
 	printCube(&cube);
-
 }
 
 int main() {
-	
 //	benchmark();
-
 //	testMove(16);
+    clock_t start=clock();
+	createTable(1,5);
+	clock_t end=clock();
 
-	createSequences(1,2);
-
+	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
+	printf("\n%f\n",time_used);
 	return 0;
 }
