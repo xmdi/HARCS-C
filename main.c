@@ -375,13 +375,13 @@ void applyMove(struct CUBE* cube, char move) {
 	}
 }
 
-char *readableSequence(uint64_t sequence) {
+const char *readableSequence(uint64_t sequence) {
 	char *moves[18]={"U ","U2 ","U' ","D ","D2 ","D' ",
 		"R ","R2 ","R' ","L ","L2 ","L' ",
 		"F ","F2 ","F' ","B ","B2 ","B' "};
-	char out[100]={0};
+	char out[999]={0};
 	for (int i=0; i<10; i++) {
-		char buffer=((sequence&(63<<(6*i)))>>(6*i));
+		char buffer=((sequence&(63ULL<<(6*i)))>>(6*i));
 		if (buffer) {
 			strcat(out,moves[buffer-1]);
 		}
@@ -420,17 +420,26 @@ void applySequence(uint64_t sequence, struct CUBE* cube) {
 	}
 }
 
-unsigned int hash(const unsigned char Nbits, struct CUBE* cube) {
+unsigned int hash(const unsigned char Nbits, struct CUBE* cube) { // fibonnaci hash
 	uint64_t mask=0;
 	for (int i=0; i<Nbits; i++) {
-		mask+=(1<<i);
+		mask+=(1<<i); // or just do 2^N-1
 	}
-	uint64_t key0=cube->EPCO+cube->CPEOCN;
-	uint64_t key=0;
-	for (int i=0; (i*Nbits)<64; i++)  {
-		key+=((key0&(mask<<(Nbits*i)))>>(Nbits*i));
+	uint64_t key=11400714819323198485ULL*(cube->EPCO+cube->CPEOCN);
+	return key>>(64-Nbits);
+}
+
+char countMoves(uint64_t *sequence) {
+	char out=0;
+	for (int i=0; i<10; i++) {
+		if ((63ULL<<(6*i))&(*sequence)) {
+			out++;
+		}	
+		else {
+			break;
+		}
 	}
-	return mask&key;
+	return out;
 }
 
 ht_t *htCreate(int c) {
@@ -448,26 +457,35 @@ entry_t *htPair(uint64_t *EPCO, uint64_t *CPEOCN, uint64_t *sequence) {
 	entry->CPEOCN=*(uint64_t*)malloc(sizeof(uint64_t)*1);
 	entry->sequence=*(int*)malloc(sizeof(uint64_t)*1);
 
-
 	entry->EPCO=*EPCO;
 	entry->CPEOCN=*CPEOCN;
 	entry->sequence=*sequence;
 	entry->next=NULL;
+
 	return entry;
 }
 
-void htInsert(ht_t *hashtable, unsigned int key, uint64_t *EPCO, uint64_t *CPEOCN, uint64_t *sequence) {
+void htInsert(ht_t *hashtable, unsigned int key, uint64_t *EPCO, uint64_t *CPEOCN, uint64_t *sequence, int *collisions) {
 	entry_t *entry=hashtable->entries[key];
-
 	if (entry==NULL) {
 		hashtable->entries[key]=htPair(EPCO,CPEOCN,sequence);
 		return;
 	}
 
+	(*collisions)++;
+
+
 	entry_t *prev;
 
-	while (entry!=NULL) {
+	//int j=0;
 
+	while (entry!=NULL) {
+	//		printf("%d\n",++j);
+	if ((entry->EPCO==*EPCO)&(entry->CPEOCN==*CPEOCN)) { // if exact collision (same exact cube)
+			if (countMoves(sequence)>countMoves(&entry->sequence)) { // if its more moves than what's there, break
+				return;
+			}
+		}
 		prev=entry;
 		entry=prev->next;
 	}
@@ -492,15 +510,23 @@ uint64_t *htRetrieve(ht_t *hashtable, unsigned int key, uint64_t *EPCO, uint64_t
 	return NULL;
 }
 
+long estimateSequenceCount(char movegroup, char depth) {
+	const unsigned char movesInGroup[]={18};
+	long out=1;
+	long lastLayer=1;
+	if (movegroup==1) {
+		for (int d=0; d<depth; d++) {
+			lastLayer=lastLayer*(movesInGroup[movegroup-1]-(d>1)*3);
+			out+=lastLayer;
+		}
+	}
+	return out;
+}
+
 void createTable(char movegroup, char depth) {
 	// generate candidate move sequences
-
-
-	const unsigned char movesInGroup[]={18};
-	//uint64_t sequences[1+power(movesInGroup[movegroup-1],depth)];
 	uint64_t *candidates;
-	candidates = (uint64_t*)malloc((1+power(movesInGroup[movegroup-1],depth))*sizeof(uint64_t));
-
+	candidates = (uint64_t*)malloc(estimateSequenceCount(movegroup,depth)*sizeof(uint64_t));
 	int c=1;
 	int start=0;
 	int end=1;
@@ -511,43 +537,39 @@ void createTable(char movegroup, char depth) {
 		start=end;
 		end=c;
 	}
-		
-	//printf("\n%p",candidates);
-	//uint64_t *sequences = (uint64_t*)realloc(candidates,c);
-
-	//printf("\n%p",sequences);
-
-	uint64_t sequences[c];
-	for (int i=0;i<c;i++){
-		sequences[i]=candidates[i];
-
-	}
-	free(candidates);
-
-
-	ht_t *ht = htCreate(c);
-
-	struct CUBE cube;
-
+	
+	candidates=(uint64_t*)realloc(candidates,c*sizeof(uint64_t));
+	
 	unsigned char tmp=0;
 	while (power(2,tmp)<=c) {
 		tmp++;
 	}
-	const unsigned char Nbits=tmp-1;
+	const unsigned char Nbits=tmp; // THIS CAN BE CHANGED! more memory for less collisions by increasing Nbits
+	
+	ht_t *ht = htCreate(power(2,Nbits));
+	
+	struct CUBE cube;
+
+	int collisions=0;
 
 	for (int i=0; i<c; i++) {
 		revertCube(&cube);
-		applySequence(sequences[i],&cube);
+		applySequence(candidates[i],&cube);
 		unsigned int key=hash(Nbits,&cube);
-		
-		htInsert(ht,key,&cube.EPCO,&cube.CPEOCN,&sequences[i]);
 
-//		printf("\n %d %u %s",i,key,readableSequence(*htRetrieve(ht,key,&cube.EPCO,&cube.CPEOCN)));
-
-	}
+		htInsert(ht,key,&cube.EPCO,&cube.CPEOCN,&candidates[i],&collisions);
 
 /*
-
+if( (i%1000000)==0){
+		printf("\n %d %d %u %s %c",i,c,key,readableSequence(*htRetrieve(ht,key,&cube.EPCO,&cube.CPEOCN)),countMoves(htRetrieve(ht,key,&cube.EPCO,&cube.CPEOCN)));
+}*/
+	}
+	
+	printf("\t\t%d collisions out of %d\n",collisions,c);
+	printf("\t\t%ld buckets\n",power(2,Nbits));
+	free(candidates);
+	getchar();
+/*
 	revertCube(&cube);
 	applyMove(&cube,1);
 	applyMove(&cube,1);
@@ -573,7 +595,7 @@ int runBenchmark(long quantity, char move) {
 	return quantity/msec*1000;
 }
 
-void benchmark() {
+void benchmarkMoves() {
 	printf("\t%d [Ux] moves per second per thread\n",runBenchmark(1e8,1));
 	printf("\t%d [Dx] moves per second per thread\n",runBenchmark(1e8,4));
 	printf("\t%d [Rx] moves per second per thread\n",runBenchmark(1e8,7));;
@@ -592,14 +614,18 @@ void testMove(char move) {
 	printCube(&cube);
 }
 
-int main() {
-//	benchmark();
-//	testMove(16);
-    clock_t start=clock();
-	createTable(1,5);
+void benchmarkHashTable(char movegroup, char depth) {
+	clock_t start=clock();
+	createTable(movegroup,depth);
 	clock_t end=clock();
-
 	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
-	printf("\n%f\n",time_used);
+	printf("\tUDRLFB Hashtable to depth %d in %f seconds.\n",depth,time_used);
+}
+
+int main() {
+	for (char i=5; i<6; i++) {
+		benchmarkHashTable(1,i);
+	}
+
 	return 0;
 }
