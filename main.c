@@ -568,7 +568,6 @@ if( (i%1000000)==0){
 	printf("\t\t%d collisions out of %d\n",collisions,c);
 	printf("\t\t%ld buckets\n",power(2,Nbits));
 	free(candidates);
-	getchar();
 /*
 	revertCube(&cube);
 	applyMove(&cube,1);
