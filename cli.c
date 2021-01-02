@@ -1,5 +1,9 @@
 #include<stdio.h>
+#include<stdlib.h>
 #include<string.h>
+
+void benchmarkMoves(void);
+
 
 void clear() {
 	for (int i=0; i<100; i++)
@@ -33,9 +37,11 @@ void execute(char* buffer) {
 	if (strcmp(buffer,"info")==0)
 		info();
 	else if (strcmp(buffer,"clear")==0)
-			clear();
-
-
+		clear();
+	else if (strcmp(buffer,"benchmark")==0)
+		benchmarkMoves();
+	else if (strcmp(buffer,"exit")==0)
+		exit(0);
 
 }
 

@@ -843,6 +843,7 @@ void initPetrus() {
 	printf("OUT");
 }
 
+/*
 int main() {
 	for (char i=5; i<6; i++) {
 //		benchmarkHashTable(1,i);
@@ -853,4 +854,4 @@ int main() {
 	initPetrus();
 
 	return 0;
-}
+}*/
