@@ -59,7 +59,7 @@ void binaryOut(uint64_t number) {
 }
 
 void printCube(struct CUBE* cube) {
-	printf("\tEP:");
+	printf("\n\tEP:");
 	for (int i=0; i<12; ++i)
 		printf(" %lx",0xf&(cube->EPCO>>(60-4*i)));
 	printf("\n\tEO:");
@@ -596,8 +596,8 @@ ht_t *createTable(char movegroup, char depth, uint64_t EPCOmask, uint64_t CPEOCN
 		htInsert(ht,key,&cube.EPCO,&cube.CPEOCN,&candidates[i],&collisions);
 	}
 	
-	printf("\t\t%d collisions out of %d\n",collisions,c);
-	printf("\t\t%ld buckets\n",power(2,Nbits));
+	printf("\n\t%d collisions in %d states",collisions,c);
+	printf("\n\t%ld buckets\n",power(2,Nbits));
 	free(candidates);
 
 	return ht;
@@ -806,7 +806,7 @@ void benchmarkHashTable(char movegroup, char depth) {
 	createTable(movegroup,depth,0xffffffffffffffff,0xffffffffffffffff);
 	clock_t end=clock();
 	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
-	printf("\tUDRLFB Hashtable to depth %d in %f seconds.\n",depth,time_used);
+	printf("\t%f seconds\n",time_used);
 }
 
 void initPetrus() {
@@ -842,16 +842,3 @@ void initPetrus() {
 
 	printf("OUT");
 }
-
-/*
-int main() {
-	for (char i=5; i<6; i++) {
-//		benchmarkHashTable(1,i);
-	}
-
-//		benchmarkMoves();
-
-	initPetrus();
-
-	return 0;
-}*/
