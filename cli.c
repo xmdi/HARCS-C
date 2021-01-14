@@ -6,8 +6,7 @@
 typedef enum {false, true} bool;
 
 bool isMove=0;
-char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
-
+//char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
 
 void clear() {
 	for (int i=0; i<100; i++)
@@ -29,14 +28,14 @@ printf(	"  ,ggg,        gg            ,ggg,   ,ggggggggggg,        ,gggg,       
 }
 
 void info() {
-	printf("\n\tHARCS v2.0pre : 01-03-2020 : Matt DiPalma : USA\n\n");
+	printf("\n\tHARCS v2.0pre : 01-08-2020 : Matt DiPalma : USA\n\n");
 }
 
 void cursor() {
 	printf("\n [HARCS]> ");
 }
 
-void execute(char* buffer, struct CUBE* basecube) {
+void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct MOVES* moves) {
 
 	if (strcmp(buffer,"info")==0)
 		info();
@@ -46,7 +45,7 @@ void execute(char* buffer, struct CUBE* basecube) {
 		benchmarkMoves();
 		printf("\n          ============================================================\n");
 		for (int i=1;i<6;i++){
-			printf("\n\tUDRLFB hashtable to depth %d:",i);
+			printf("\n\tUnmasked UDRLFB hashtable to depth %d:",i);
 			benchmarkHashTable(1,i);
 		}
 	}
@@ -54,6 +53,11 @@ void execute(char* buffer, struct CUBE* basecube) {
 		for (int i=0; i<18; i++){
 			if (strcmp(buffer,moveList[i])==0){
 				applyMove(basecube,i+1);
+				char new[999];
+				strcpy(new,moves->list);
+				strcat(new,moveList[i]);
+				strcat(new," ");
+				strcpy(moves->list,new);
 			}
 		}
 		if (strcmp(buffer,"#")==0){
@@ -69,14 +73,40 @@ void execute(char* buffer, struct CUBE* basecube) {
 	}
 	else if (strcmp(buffer,"state")==0)
 		printCube(basecube);
+	else if (strcmp(buffer,"help")==0)
+		printf("\n\tSee accompanying README.\n");
 	else if (strcmp(buffer,"exit")==0)
 		exit(0);
+	else if (strcmp(buffer,"petrus")==0){	
+		struct STEP *s3x2x2=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
+		struct STEP *sEO=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
+		struct STEP *sF2L=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
+		initMethod(method,"Petrus",s3x2x2); 
+		initStep(s3x2x2,"3x2x2",1,5,5,0x0000f00ff0ff00c3,0x00003c03c030f3ff,sEO);
+		initStep(sEO,"EO",1,5,5,0x0000f00ff0ff00c3,0x00003c03ffffffff,sF2L);
+		initStep(sF2L,"F2L",1,5,5,0x0000ffffffff00ff,0x00003fffffffffff,NULL);
+	}
+	else if (strcmp(buffer,"solve")==0){	
+		struct STEP *step=method->first;
+		while (step!=NULL)
+			{
+				printf("\n\tSolving %s:\n",step->name);
+				solveStep(step,moves,10);
+
+				/*char new[999];
+				strcpy(new,moves->list);
+				strcat(new,moveList[i]);
+				strcat(new," ");
+				moves->list=new;*/
+	
+				step=step->next;
+			}
+	}
 	else
 		printf("\n\tCommand not recognized.\n");
-
 }
 
-void getInput(struct CUBE* basecube) {
+void getInput(struct CUBE* basecube, struct METHOD* method, struct MOVES* moves) {
 	char command[500];
 	cursor();
 	fgets(command,500,stdin);
@@ -84,7 +114,7 @@ void getInput(struct CUBE* basecube) {
 
 	char* buffer=strtok(command," ");
 	while (buffer!=NULL) {
-		execute(buffer,basecube);
+		execute(buffer,basecube,method,moves);
 		buffer=strtok(NULL," ");
 	}
 
@@ -92,14 +122,16 @@ void getInput(struct CUBE* basecube) {
 
 int main() {
 
-	struct CUBE basecube;
-	revertCube(&basecube);
+	struct CUBE *basecube=(struct CUBE*)malloc(sizeof(struct CUBE));
+	revertCube(basecube);
+	struct METHOD *method=(struct METHOD*)malloc(sizeof(struct METHOD));
+	struct MOVES *moves=(struct MOVES*)malloc(sizeof(struct MOVES));
 
 	clear();
 	splash();
 
 	while (1) {
-		getInput(&basecube);
+		getInput(basecube,method,moves);
 	}
 
 	return 0;
