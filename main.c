@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <time.h>
 
-int nThreads=1;
+int nThreads=8;
 
 char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
 
@@ -44,6 +44,11 @@ struct METHOD {
 struct solution {
 	uint64_t sol1,sol2;
 	struct solution *next;
+};
+
+struct parallelOut {
+	struct solution *solutions;
+	int quantity;
 };
 
 struct parallelArgs {
@@ -443,7 +448,7 @@ char *readableSequence(uint64_t sequence) {
 void addLayers(char movegroup, uint64_t baseSequence, char depth, uint64_t *candidates, int *c) {
 	const unsigned char axes[]={1,1,0,0,2,2};
 	if (movegroup==1) {
-		for (int i=1; i<19; i++) {
+		for (int64_t i=1; i<19; i++) {
 			// currently makes sure no moves that ought to cancel U U2 and assures U never follows D, etc
 			if (depth==0) {
 				candidates[(*c)++]=baseSequence+(i<<(6*depth));
@@ -494,7 +499,7 @@ unsigned int hash(const unsigned char Nbits, struct CUBE* cube) { // fibonnaci h
 
 char countMoves(uint64_t *sequence) {
 	char out=0;
-	for (int i=0; i<10; i++) {
+	for (uint64_t i=0; i<10; i++) {
 		if ((63ULL<<(6*i))&(*sequence)) {
 			out++;
 		}	
@@ -620,8 +625,7 @@ ht_t *createTable(char movegroup, char depth, uint64_t EPCOmask, uint64_t CPEOCN
 		htInsert(ht,key,&cube.EPCO,&cube.CPEOCN,&candidates[i],&collisions);
 	}
 	
-	printf("\n\t%d collisions in %d states",collisions,c);
-	printf("\n\t%ld buckets\n",power(2,Nbits));
+	printf("\n\t\t%d collisions for %d states in %ld buckets in ",collisions,c,power(2,Nbits));
 	free(candidates);
 
 	return ht;
@@ -633,14 +637,24 @@ void initMethod(struct METHOD* method, char name[], struct STEP* first) {
 }
 
 void initStep(struct STEP* step, char name[], char movegroup, char tableDepth, char searchDepth, uint64_t EPCOmask, uint64_t CPEOCNmask, struct STEP* next) {
+	long tstart, tend;
+	struct timeval timecheck;
+	gettimeofday(&timecheck,NULL);
+	tstart=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+
 	strcpy(step->name,name);
 	step->movegroup=movegroup;
 	step->tableDepth=tableDepth;
 	step->searchDepth=searchDepth;
 	step->EPCOmask=EPCOmask;
 	step->CPEOCNmask=CPEOCNmask;
-	step->table=createTable(movegroup,tableDepth,EPCOmask,CPEOCNmask);
 	step->next=next;
+	
+	printf("\n\tTabulating %s:",name);
+	step->table=createTable(movegroup,tableDepth,EPCOmask,CPEOCNmask);
+	gettimeofday(&timecheck,NULL);
+	tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+	printf("%ld ms\n",(tend-tstart));
 }
 
 uint64_t reverseSequence(uint64_t sequence) {
@@ -682,27 +696,105 @@ void insertSolution(struct solution* solutionsList, uint64_t sol1, uint64_t sol2
 
 // add something to clean out the duplicates
 
-void sortSolutions(struct solution* solutionsList, int quantity) {
+int sortSolutions(struct solution* solutionsList, int quantity, struct solution* output) {
 	struct solution* iterator=solutionsList;
+
 	int lengths[22]={0};
 
-	while(iterator->next!=NULL) { 
+	while(iterator!=NULL) { 
 		lengths[countMoves(&iterator->sol1)+countMoves(&iterator->sol2)]++;
-		printf("%d: %s%s\n",countMoves(&iterator->sol1)+countMoves(&iterator->sol2),readableSequence(iterator->sol1),readableSequence(iterator->sol2));
+		//printf("first %d: %s%s\n",countMoves(&iterator->sol1)+countMoves(&iterator->sol2),readableSequence(iterator->sol1),readableSequence(iterator->sol2));
 		iterator=iterator->next;
 	}
 
-	for (int i=0;i<22;i++){
-		printf("\n\tlength:%d, qty:%d",i,lengths[i]);
-	}
+	char min=22;
+	char max=0;
+	int numSolutions=0;
 
-	return;
+	for (int i=0;i<22;i++){ // find minimum and maximum movecounts in list
+		if (lengths[i]&&i<min)
+				min=i;
+		else if (lengths[i]&&i>max)
+				max=i;
+		numSolutions+=lengths[i];
+	}
+	
+	// create new list
+	struct solution* orderedList=(struct solution*)malloc(sizeof(struct solution));
+	iterator=solutionsList;
+
+	// loop thru all sequences in list and pull out all at minimum movecount, and add to new list
+	// repeat loop above up to maximum movecount
+	for (int i=min;i<=max;i++) {
+		iterator=solutionsList;
+		while(iterator!=NULL) { 
+			if ((countMoves(&iterator->sol1)+countMoves(&iterator->sol2))==i) {
+				insertSolution(orderedList,iterator->sol1,iterator->sol2);
+			}
+			iterator=iterator->next;
+		}
+	}
+	iterator=orderedList;
+	for (int q=0;q<quantity;q++) {
+		insertSolution(output,iterator->sol1,iterator->sol2);
+		iterator=iterator->next;
+	}
+	return numSolutions;
+}
+/*
+bool isSame(uint64_t sol1a, uint64_t sol2a, uint64_t sol1b, uint64_t sol2b) {
+	uint64_t comparingFrom=sol1a;
+	uint64_t comparingTo=sol1b;
+	bool switcheda=0;
+	bool switchedb=0;
+	for (int m=0; m<=10; m++) {
+		if ((comparingFrom&(63<<(6*m)))==0)
+			if (switcheda)
+				return 1;
+			else
+				comparingFrom=sol2b;
+		if ((comparingTo&(63<<(6*m)))==0)
+			if (switcheda)
+				return 1;
+			else
+				comparingFrom=sol2b;
+
+
+		temp=(sequence&(63<<(6*m)))>>(6*m);
+			out|=(3*((temp-1)/3)+4-(((temp-1)%3)+1))<<(6*place++);
+		}
+		else c
+	}
+	return out;
 }
 
+
+
+}
+
+void removeDuplicates(struct solution* solutionsList) {
+	struct solution* iterator=solutionsList;
+	struct solution* iterator2=NULL;
+	if (iterator->next=NULL)
+			break;
+		iterator2=iterator->next;
+	while(iterator!=NULL) { // go one by one thru list
+		iterator2=iterator->next;
+		while(iterator2!=NULL) { // check if there are duplicates in the list
+			if 
+			
+			printf("%s%s\n",readableSequence(iterator->sol1),readableSequence(iterator->sol2));
+			iterator2=iterator2->next;
+		}
+		iterator=iterator->next;
+	}
+	return;
+}
+*/
 void printSolutions(struct solution* solutionsList) {
 	struct solution* iterator=solutionsList;
-	while(iterator->next!=NULL) { 
-		printf("%s%s\n",readableSequence(iterator->sol1),readableSequence(iterator->sol2));
+	while(iterator!=NULL) { 
+		//printf("%s%s\n",readableSequence(iterator->sol1),readableSequence(iterator->sol2));
 		iterator=iterator->next;
 	}
 	return;
@@ -710,7 +802,7 @@ void printSolutions(struct solution* solutionsList) {
 
 void combineSolutionLists(struct solution* solutionsList, struct solution* BigSolutionsList) {
 	struct solution* iterator=solutionsList;
-	while(iterator->next!=NULL) { 
+	while(iterator!=NULL) { 
 		insertSolution(BigSolutionsList, iterator->sol1, iterator->sol2);
 		iterator=iterator->next;
 	}
@@ -724,7 +816,7 @@ void *parallelSearch(void *args) {
 	uint64_t *out=NULL;	
 	struct solution* solutions=NULL;
 	solutions=(struct solution*)malloc(sizeof(struct solution));
-	
+	int quantity=0;
 
 	for (int i=(pArgs->start); i<(pArgs->end); i++) {
 		cube0.EPCO=pArgs->cube->EPCO;
@@ -742,16 +834,27 @@ void *parallelSearch(void *args) {
 			free(sol1);
 			free(sol2);*/
 			insertSolution(solutions,pArgs->candidates[i],reverseSequence(*out));
+			quantity++;
 		}
 	}
 	free(pArgs);
-	pthread_exit(solutions);
+	struct parallelOut* pout=NULL;
+	pout=(struct parallelOut*)malloc(sizeof(struct parallelOut));
+	pout->solutions=solutions;
+	pout->quantity=quantity;
+	pthread_exit(pout);
+	//pthread_exit(solutions);
 }
 
 void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
-
-	clock_t cstart=clock();
 	
+	long tstart, tend;
+	struct timeval timecheck;
+	gettimeofday(&timecheck,NULL);
+	tstart=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+
+
+
 	struct CUBE *cube0=(struct CUBE*)malloc(sizeof(struct CUBE));
 	revertCube(cube0);
 	applyMask(cube0,step->EPCOmask,step->CPEOCNmask);
@@ -772,11 +875,11 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 	}
 	
 	candidates=(uint64_t*)realloc(candidates,c*sizeof(uint64_t));
-
-/*	printf("C = %d\n\n",c);
-	for (int i=1;i<100;i++) {
+/*
+	printf("C = %d\n\n",c);
+	for (int i=1;i<c;i++) {
 		binaryOut(candidates[i]);
-		printf("%s\n",readableSequence(candidates[i]));
+		printf("%s\n\n\n",readableSequence(candidates[i]));
 	}
 		getchar();
 */
@@ -809,26 +912,41 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 	allSolutions=(struct solution*)malloc(sizeof(struct solution));
 	
 	for (int i=0; i<(nThreads); i++) {
-		struct solution* solutions=NULL;
-		pthread_join(threads[i],(void**)&solutions);
-		combineSolutionLists(solutions,allSolutions);
+//		struct solution* solutions=NULL;
+//		solutions=(struct solution*)malloc(sizeof(struct solution));
+		struct parallelOut* pout=NULL;
+		pout=(struct parallelOut*)malloc(sizeof(struct parallelOut));
+//		pthread_join(threads[i],(void**)&solutions);
+		pthread_join(threads[i],(void**)&pout);
+		if (pout->quantity)
+			combineSolutionLists(pout->solutions,allSolutions);
 	}
 
-	clock_t cend=clock();
-	double time_used=((double) (cend-cstart))/CLOCKS_PER_SEC;
-	printf("All solutions found in %f seconds.\n",time_used);
+	struct solution* resultSolutions=NULL;
+	resultSolutions=(struct solution*)malloc(sizeof(struct solution));
+	int numSolutions=sortSolutions(allSolutions,quantity,resultSolutions);
 
+	printSolutions(resultSolutions);	
 
-
-	sortSolutions(allSolutions,quantity);
-
-
-//	printSolutions(allSolutions);	
-
+	gettimeofday(&timecheck,NULL);
+	tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+	
+	printf("\n\t%d solutions found & sorted in %ld ms, %d reported.\n",numSolutions,(tend-tstart),quantity);
 
 	
 	return;
 }
+
+
+void randomizeCube(struct CUBE* cube) {
+	cube->EPCO;
+	cube->CPEOCN;
+
+	return;
+}
+
+
+
 
 int runBenchmark(long quantity, char move) {
 	struct CUBE cube;
