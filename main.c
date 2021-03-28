@@ -7,6 +7,8 @@
 
 int nThreads=8;
 
+typedef enum {false, true} bool;
+
 char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
 
 struct CUBE {
@@ -60,6 +62,8 @@ struct parallelArgs {
 	int start;
 	int end;
 };
+
+int gettimeofday(struct timeval *restrict tp, void *restrict tzp);
 
 long power(char base, char exponent) {
 	long out=1;
@@ -662,8 +666,8 @@ uint64_t reverseSequence(uint64_t sequence) {
 	int place=0;
 	uint64_t temp=0;
 	for (int m=10; m>=0; m--) {
-		if ((sequence&(63<<(6*m)))>>(6*m)) {
-			temp=(sequence&(63<<(6*m)))>>(6*m);
+		if ((sequence&(63ULL<<(6*m)))>>(6*m)) {
+			temp=(sequence&(63ULL<<(6*m)))>>(6*m);
 			out|=(3*((temp-1)/3)+4-(((temp-1)%3)+1))<<(6*place++);
 		}
 	}
@@ -694,14 +698,108 @@ void insertSolution(struct solution* solutionsList, uint64_t sol1, uint64_t sol2
 	return;
 }
 
+void reduceSequence(struct solution* solution) {
+	
+	uint64_t working=solution->sol1;
+
+	bool allgood=0;
+	int length=0;
+	uint64_t last, this;
+	
+	while (!allgood) {
+		allgood=1;
+		working=solution->sol1;
+		
+		last=working&(63ULL);
+		
+		for (int m=1; m<=10; m++) { // sol1
+			this=(working&(63ULL<<(6*m)))>>(6*m);
+			if (!this) {
+				working=solution->sol2;
+				length=m-1;
+				break; // maybe have to add something here to carry on to next section
+			}
+			else if (this<=18) { // this alg only works for UDRLFB, add variant for the others
+				if ((((last-1)/3)==((this-1)/3+1))&&(((last-1)/6)==((this-1)/6)))	{
+					solution->sol1=(solution->sol1)&(~(4095ULL<<(6*(m-1))))|(this<<(6*(m-1)))|(last<<(6*m));
+					allgood=0;	
+				}
+				else if (((this-1)/3)==((last-1)/3)) {
+					if (((this-1)%3+(last-1)%3)==2) { // cancellation
+						solution->sol1=(solution->sol1&((1<<(6*(m-1)))-1))|((solution->sol1&(((1ULL<<63)-1)<<(6*(m+1))))>>12);
+						allgood=0;	
+					}
+					else { // combine moves
+						solution->sol1=(solution->sol1&((1<<(6*(m-1)))-1))|((solution->sol1&(((1ULL<<63)-1)<<(6*(m+1))))>>6)|(((((this-1)%3+1)+((last-1)%3+1))%4+((this-1)/3)*3)<<(6*m));
+						allgood=0;	
+					}
+				}
+			}
+			last=this;
+		}
+
+		// between sol1 and sol2
+		this=working&(63ULL);
+		if (this<=18) { // this alg only works for UDRLFB, add variant for the others
+			if ((((last-1)/3)==((this-1)/3+1))&&(((last-1)/6)==((this-1)/6)))	{
+				allgood=0;	
+				solution->sol1=(solution->sol1)&(~(63ULL<<(6*length)))|(this<<(6*length));	
+				solution->sol2=(((solution->sol2)>>6)<<6)+last;	
+			}
+			else if (((this-1)/3)==((last-1)/3)) {
+				if (((this-1)%3+(last-1)%3)==2) { // cancellation
+					allgood=0;	
+					solution->sol1=(solution->sol1)&(~(63ULL<<(6*length)));	
+					solution->sol2=((solution->sol2)>>6);	
+				}
+				else { // combine moves
+					allgood=0;	
+					solution->sol1=(solution->sol1)&(~(63ULL<<(6*length)))|(((((this-1)%3+1)+((last-1)%3+1))%4+((this-1)/3)*3)<<(6*length));
+					solution->sol2=((solution->sol2)>>6);	
+				}
+			}
+		}
+
+		last=this;
+
+
+
+		for (int m=1; m<=10; m++) { // sol2
+			this=(working&(63ULL<<(6*m)))>>(6*m);
+			if (!this) {
+				break; // maybe have to add something here to carry on to next section
+			}
+			else if (this<=18) { // this alg only works for UDRLFB, add variant for the others
+				if ((((last-1)/3)==((this-1)/3+1))&&(((last-1)/6)==((this-1)/6)))	{
+					allgood=0;	
+					solution->sol2=(solution->sol2)&(~(4095ULL<<(6*(m-1))))|(this<<(6*(m-1)))|(last<<(6*m));	
+				}
+				else if (((this-1)/3)==((last-1)/3)) {
+					if (((this-1)%3+(last-1)%3)==2) { // cancellation
+						allgood=0;	
+						solution->sol2=(solution->sol2&((1<<(6*(m-1)))-1))|((solution->sol2&(((1ULL<<63)-1)<<(6*(m+1))))>>12);
+					}
+					else { // combine moves
+						allgood=0;	
+						solution->sol2=(solution->sol2&((1<<(6*(m-1)))-1))|((solution->sol2&(((1ULL<<63)-1)<<(6*(m+1))))>>6)|(((((this-1)%3+1)+((last-1)%3+1))%4+((this-1)/3)*3)<<(6*m));
+					}
+				}
+			}
+			last=this;
+		}
+	}
+	return;
+}
+
 // add something to clean out the duplicates
 
-int sortSolutions(struct solution* solutionsList, int quantity, struct solution* output) {
+void sortSolutions(struct solution* solutionsList, struct solution* output) {
 	struct solution* iterator=solutionsList;
 
 	int lengths[22]={0};
 
 	while(iterator!=NULL) { 
+		reduceSequence(iterator);
 		lengths[countMoves(&iterator->sol1)+countMoves(&iterator->sol2)]++;
 		//printf("first %d: %s%s\n",countMoves(&iterator->sol1)+countMoves(&iterator->sol2),readableSequence(iterator->sol1),readableSequence(iterator->sol2));
 		iterator=iterator->next;
@@ -709,14 +807,12 @@ int sortSolutions(struct solution* solutionsList, int quantity, struct solution*
 
 	char min=22;
 	char max=0;
-	int numSolutions=0;
 
 	for (int i=0;i<22;i++){ // find minimum and maximum movecounts in list
 		if (lengths[i]&&i<min)
 				min=i;
 		else if (lengths[i]&&i>max)
 				max=i;
-		numSolutions+=lengths[i];
 	}
 	
 	// create new list
@@ -735,66 +831,91 @@ int sortSolutions(struct solution* solutionsList, int quantity, struct solution*
 		}
 	}
 	iterator=orderedList;
-	for (int q=0;q<quantity;q++) {
+	while (iterator!=NULL) {
 		insertSolution(output,iterator->sol1,iterator->sol2);
 		iterator=iterator->next;
 	}
-	return numSolutions;
 }
-/*
+
+
 bool isSame(uint64_t sol1a, uint64_t sol2a, uint64_t sol1b, uint64_t sol2b) {
 	uint64_t comparingFrom=sol1a;
 	uint64_t comparingTo=sol1b;
-	bool switcheda=0;
-	bool switchedb=0;
-	for (int m=0; m<=10; m++) {
-		if ((comparingFrom&(63<<(6*m)))==0)
-			if (switcheda)
+	bool switchedA=0;
+	bool switchedB=0;
+	int mA=0;
+	int mB=0;
+	while (1) {	
+		if ((comparingFrom&(63ULL<<(6*mA)))==0){
+			if (switchedA) {
 				return 1;
-			else
-				comparingFrom=sol2b;
-		if ((comparingTo&(63<<(6*m)))==0)
-			if (switcheda)
-				return 1;
-			else
-				comparingFrom=sol2b;
-
-
-		temp=(sequence&(63<<(6*m)))>>(6*m);
-			out|=(3*((temp-1)/3)+4-(((temp-1)%3)+1))<<(6*place++);
+			}
+			else {
+				switchedA=1;
+				comparingFrom=sol2a;
+				mA=0;
+				continue;
+			}
 		}
-		else c
+		if ((comparingTo&(63ULL<<(6*mB)))==0) {
+			if (switchedB) {
+				return 1;
+			}
+			else {
+				switchedB=1;
+				comparingTo=sol2b;
+				mB=0;
+				continue;
+			}
+		}
+		if (((comparingFrom&(63ULL<<(6*mA)))>>(6*mA))!=((comparingTo&(63ULL<<(6*mB)))>>(6*mB))) {
+			return 0;
+		}
+		mA++;
+		mB++;
 	}
-	return out;
 }
 
-
-
-}
-
-void removeDuplicates(struct solution* solutionsList) {
+int removeDuplicates(struct solution* solutionsList, int quantity) {
 	struct solution* iterator=solutionsList;
 	struct solution* iterator2=NULL;
-	if (iterator->next=NULL)
-			break;
-		iterator2=iterator->next;
+	struct solution* previous=NULL;
+	int numSolutions=0;
+	if (iterator->next==NULL)
+			return 0;
+	iterator2=iterator->next;
 	while(iterator!=NULL) { // go one by one thru list
 		iterator2=iterator->next;
+		previous=iterator;
 		while(iterator2!=NULL) { // check if there are duplicates in the list
-			if 
-			
-			printf("%s%s\n",readableSequence(iterator->sol1),readableSequence(iterator->sol2));
+			if (isSame(iterator->sol1,iterator->sol2,iterator2->sol1,iterator2->sol2)) {
+				previous->next=iterator2->next;
+			}
+			previous=iterator2;
 			iterator2=iterator2->next;
 		}
 		iterator=iterator->next;
 	}
-	return;
+
+	iterator=solutionsList;
+	while (iterator!=NULL) {
+		numSolutions++;
+		iterator=iterator->next;
+	}
+
+	iterator=solutionsList;
+	for (int q=0;q<=quantity;q++) {
+		iterator=iterator->next;
+	}
+
+	return numSolutions;
 }
-*/
+
+
 void printSolutions(struct solution* solutionsList) {
 	struct solution* iterator=solutionsList;
 	while(iterator!=NULL) { 
-		//printf("%s%s\n",readableSequence(iterator->sol1),readableSequence(iterator->sol2));
+		printf("%s%s\n",readableSequence(iterator->sol1),readableSequence(iterator->sol2));
 		iterator=iterator->next;
 	}
 	return;
@@ -912,11 +1033,8 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 	allSolutions=(struct solution*)malloc(sizeof(struct solution));
 	
 	for (int i=0; i<(nThreads); i++) {
-//		struct solution* solutions=NULL;
-//		solutions=(struct solution*)malloc(sizeof(struct solution));
 		struct parallelOut* pout=NULL;
 		pout=(struct parallelOut*)malloc(sizeof(struct parallelOut));
-//		pthread_join(threads[i],(void**)&solutions);
 		pthread_join(threads[i],(void**)&pout);
 		if (pout->quantity)
 			combineSolutionLists(pout->solutions,allSolutions);
@@ -924,23 +1042,23 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 
 	struct solution* resultSolutions=NULL;
 	resultSolutions=(struct solution*)malloc(sizeof(struct solution));
-	int numSolutions=sortSolutions(allSolutions,quantity,resultSolutions);
-
-	printSolutions(resultSolutions);	
+	
+	sortSolutions(allSolutions,resultSolutions);
+	
+	int numSolutions=removeDuplicates(resultSolutions,quantity);
 
 	gettimeofday(&timecheck,NULL);
 	tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
 	
-	printf("\n\t%d solutions found & sorted in %ld ms, %d reported.\n",numSolutions,(tend-tstart),quantity);
-
+	printf("\n\t%d unique solutions found & sorted in %ld ms, %d reported.\n",numSolutions,(tend-tstart),quantity);
 	
 	return;
 }
 
 
 void randomizeCube(struct CUBE* cube) {
-	cube->EPCO;
-	cube->CPEOCN;
+	//cube->EPCO;
+	//cube->CPEOCN;
 
 	return;
 }

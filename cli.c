@@ -3,8 +3,6 @@
 #include<string.h>
 #include "main.c"
 
-typedef enum {false, true} bool;
-
 bool isMove=0;
 //char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
 
@@ -77,7 +75,21 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		printf("\n\tSee accompanying README.\n");
 	else if (strcmp(buffer,"exit")==0)
 		exit(0);
-	else if (strcmp(buffer,"petrus")==0){	
+	else if (strcmp(buffer,"debug")==0){
+		struct solution* solution=NULL;
+		solution=(struct solution*)malloc(sizeof(struct solution));
+	
+		solution->next=NULL;
+		solution->sol1=0b1000000101010001001101000110001111;
+		solution->sol2=0b10000001000001111001010001111001001;
+
+		printSolutions(solution);
+		
+		reduceSequence(solution);
+
+		printSolutions(solution);
+	}
+else if (strcmp(buffer,"petrus")==0){	
 		struct STEP *s3x2x2=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
 		struct STEP *sEO=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
 		struct STEP *sF2L=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
