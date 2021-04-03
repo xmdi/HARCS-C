@@ -106,6 +106,61 @@ void revertCube(struct CUBE* cube) {
 	cube->CPEOCN=0b00010010001101000101011001111000111111111111111111111111001010;
 }
 
+void randomizeCube(struct CUBE* cube) {	
+	
+	int s,i;
+	bool parity=0;
+
+	for(i=0;i<11;i++){
+		s=(rand()%(11-i+1))+i;
+		if (s!=i) {
+			cube->EPCO=cube->EPCO&(~(15ULL<<(60-4*s)))&(~(15ULL<<(60-4*i)))|((cube->EPCO&(15ULL<<(60-4*i)))>>(4*(s-i)))|((cube->EPCO&(15ULL<<(60-4*s)))<<(4*(s-i)));
+			parity=!parity;
+		}
+	}
+
+	for(i=0;i<7;i++){
+		s=(rand()%(7-i+1))+i;
+		if (s!=i) {
+			cube->CPEOCN=cube->CPEOCN&(~(15ULL<<(58-4*s)))&(~(15ULL<<(58-4*i)))|((cube->CPEOCN&(15ULL<<(58-4*i)))>>(4*(s-i)))|((cube->CPEOCN&(15ULL<<(58-4*s)))<<(4*(s-i)));
+			parity=!parity;
+		}
+	}
+
+	// do an extra cycle in case of parity - unlike the sheeple that just skip the last cycle and break randomness
+	while (parity) {
+		i=(rand()%(12));
+		s=(rand()%(11-i+1))+i;
+		if (s!=i) {
+			cube->EPCO=cube->EPCO&(~(15ULL<<(60-4*s)))&(~(15ULL<<(60-4*i)))|((cube->EPCO&(15ULL<<(60-4*i)))>>(4*(s-i)))|((cube->EPCO&(15ULL<<(60-4*s)))<<(4*(s-i)));
+			parity=!parity;
+		}
+	}
+
+	bool flips=0;
+	for (i=0;i<12;i++){
+		if ((i==11) && !flips) {
+			break;
+		}
+		if (rand()%(2)){
+			cube->CPEOCN^=(2ULL<<(28-2*i));
+			flips=~flips;
+		}
+	}
+
+	int spins=0;
+
+	for (i=0;i<7;i++){
+		s=(rand()%3)+1;
+		cube->EPCO=cube->EPCO&(~(3ULL<<(14-2*i)))|(s<<(14-2*i));	
+		spins+=s;
+	}
+	if (spins%3){
+		cube->EPCO=cube->EPCO&(~3ULL)|(3-spins%3);	
+	}
+
+}
+
 void applyMask(struct CUBE* cube, uint64_t EPCOmask, uint64_t CPEOCNmask) {
 	cube->EPCO&=EPCOmask;
 	cube->CPEOCN&=CPEOCNmask;
@@ -1055,17 +1110,6 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 	return;
 }
 
-
-void randomizeCube(struct CUBE* cube) {
-	//cube->EPCO;
-	//cube->CPEOCN;
-
-	return;
-}
-
-
-
-
 int runBenchmark(long quantity, char move) {
 	struct CUBE cube;
 	revertCube(&cube);
@@ -1090,12 +1134,24 @@ void benchmarkMoves() {
 	printf("\t%d [Bx] moves per second per thread\n",runBenchmark(1e8,16));
 }
 
+void benchmarkRandomize() {
+	clock_t start=clock();
+	for (int i=0; i<=1e6; i++) {
+		struct CUBE cube;
+		revertCube(&cube);
+		randomizeCube(&cube);
+	}
+	clock_t end=clock();
+	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
+	printf("\n\t1e6 random states generated in %f seconds\n",time_used);
+}
+
 void benchmarkHashTable(char movegroup, char depth) {
 	clock_t start=clock();
 	createTable(movegroup,depth,0xffffffffffffffff,0xffffffffffffffff);
 	clock_t end=clock();
 	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
-	printf("\t%f seconds\n",time_used);
+	printf("%f seconds\n",time_used);
 }
 
 /*void initPetrus() {

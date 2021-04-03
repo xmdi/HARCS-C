@@ -26,7 +26,7 @@ printf(	"  ,ggg,        gg            ,ggg,   ,ggggggggggg,        ,gggg,       
 }
 
 void info() {
-	printf("\n\tHARCS v2.0pre : 03-26-2021 : Matt DiPalma : USA\n\n");
+	printf("\n\tHARCS v2.0pre : 04-03-2021 : Matt DiPalma : USA\n\n");
 }
 
 void cursor() {
@@ -46,6 +46,8 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 			printf("\n\tUnmasked UDRLFB hashtable to depth %d:",i);
 			benchmarkHashTable(1,i);
 		}
+		printf("\n          ============================================================\n");
+		benchmarkRandomize();
 	}
 	else if (isMove){
 		for (int i=0; i<18; i++){
@@ -75,6 +77,10 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		printf("\n\tSee accompanying README.\n");
 	else if (strcmp(buffer,"exit")==0)
 		exit(0);
+	else if (strcmp(buffer,"random")==0){
+		randomizeCube(basecube);
+		printf("\n\tRandom state applied.\n");
+		}
 	else if (strcmp(buffer,"debug")==0){
 		struct solution* solution=NULL;
 		solution=(struct solution*)malloc(sizeof(struct solution));
@@ -134,6 +140,7 @@ void getInput(struct CUBE* basecube, struct METHOD* method, struct MOVES* moves)
 
 int main() {
 
+	srand(time(0));
 	struct CUBE *basecube=(struct CUBE*)malloc(sizeof(struct CUBE));
 	revertCube(basecube);
 	struct METHOD *method=(struct METHOD*)malloc(sizeof(struct METHOD));
@@ -148,4 +155,3 @@ int main() {
 
 	return 0;
 }
-
