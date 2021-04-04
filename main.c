@@ -114,7 +114,7 @@ void randomizeCube(struct CUBE* cube) {
 	for(i=0;i<11;i++){
 		s=(rand()%(11-i+1))+i;
 		if (s!=i) {
-			cube->EPCO=cube->EPCO&(~(15ULL<<(60-4*s)))&(~(15ULL<<(60-4*i)))|((cube->EPCO&(15ULL<<(60-4*i)))>>(4*(s-i)))|((cube->EPCO&(15ULL<<(60-4*s)))<<(4*(s-i)));
+			cube->EPCO=(cube->EPCO&(~(15ULL<<(60-4*s)))&(~(15ULL<<(60-4*i))))|((cube->EPCO&(15ULL<<(60-4*i)))>>(4*(s-i)))|((cube->EPCO&(15ULL<<(60-4*s)))<<(4*(s-i)));
 			parity=!parity;
 		}
 	}
@@ -122,7 +122,7 @@ void randomizeCube(struct CUBE* cube) {
 	for(i=0;i<7;i++){
 		s=(rand()%(7-i+1))+i;
 		if (s!=i) {
-			cube->CPEOCN=cube->CPEOCN&(~(15ULL<<(58-4*s)))&(~(15ULL<<(58-4*i)))|((cube->CPEOCN&(15ULL<<(58-4*i)))>>(4*(s-i)))|((cube->CPEOCN&(15ULL<<(58-4*s)))<<(4*(s-i)));
+			cube->CPEOCN=(cube->CPEOCN&(~(15ULL<<(58-4*s)))&(~(15ULL<<(58-4*i))))|((cube->CPEOCN&(15ULL<<(58-4*i)))>>(4*(s-i)))|((cube->CPEOCN&(15ULL<<(58-4*s)))<<(4*(s-i)));
 			parity=!parity;
 		}
 	}
@@ -132,7 +132,7 @@ void randomizeCube(struct CUBE* cube) {
 		i=(rand()%(12));
 		s=(rand()%(11-i+1))+i;
 		if (s!=i) {
-			cube->EPCO=cube->EPCO&(~(15ULL<<(60-4*s)))&(~(15ULL<<(60-4*i)))|((cube->EPCO&(15ULL<<(60-4*i)))>>(4*(s-i)))|((cube->EPCO&(15ULL<<(60-4*s)))<<(4*(s-i)));
+			cube->EPCO=(cube->EPCO&(~(15ULL<<(60-4*s)))&(~(15ULL<<(60-4*i))))|((cube->EPCO&(15ULL<<(60-4*i)))>>(4*(s-i)))|((cube->EPCO&(15ULL<<(60-4*s)))<<(4*(s-i)));
 			parity=!parity;
 		}
 	}
@@ -144,7 +144,7 @@ void randomizeCube(struct CUBE* cube) {
 		}
 		if (rand()%(2)){
 			cube->CPEOCN^=(2ULL<<(28-2*i));
-			flips=~flips;
+			flips=!flips;
 		}
 	}
 
@@ -152,11 +152,11 @@ void randomizeCube(struct CUBE* cube) {
 
 	for (i=0;i<7;i++){
 		s=(rand()%3)+1;
-		cube->EPCO=cube->EPCO&(~(3ULL<<(14-2*i)))|(s<<(14-2*i));	
+		cube->EPCO=(cube->EPCO&(~(3ULL<<(14-2*i))))|(s<<(14-2*i));	
 		spins+=s;
 	}
 	if (spins%3){
-		cube->EPCO=cube->EPCO&(~3ULL)|(3-spins%3);	
+		cube->EPCO=(cube->EPCO&(~3ULL))|(3-spins%3);	
 	}
 
 }
@@ -164,6 +164,82 @@ void randomizeCube(struct CUBE* cube) {
 void applyMask(struct CUBE* cube, uint64_t EPCOmask, uint64_t CPEOCNmask) {
 	cube->EPCO&=EPCOmask;
 	cube->CPEOCN&=CPEOCNmask;
+}
+
+void applyMaskScrambled(struct CUBE* cube, uint64_t EPCOmask, uint64_t CPEOCNmask) {
+	struct CUBE *cube0=(struct CUBE*)malloc(sizeof(struct CUBE));
+	revertCube(cube0);
+	cube0->EPCO&=EPCOmask;
+	cube0->CPEOCN&=CPEOCNmask;
+	bool inMask=0;
+
+	uint64_t EO=0;
+	uint64_t CO=0;
+	uint64_t CN=0;
+
+	for (int i=0;i<2;i++){ // CN
+		if (CPEOCNmask>>(3-3*i)&7ULL){ 
+			for (int j=0; j<2; j++){ 
+				if ((((cube0->CPEOCN)&(7ULL<<(3-3*i)))>>(3-3*i))==(((cube->CPEOCN)&(7ULL<<(3-3*j)))>>(3-3*j))){
+					CN+=((cube->CPEOCN>>(3-3*j))&7ULL)<<(3-3*j);
+					break;
+				}
+			}
+		}
+	}
+
+	for (int i=0;i<12;i++){ // EO
+		if (CPEOCNmask>>(29-2*i)&1ULL){ // if we care about the orientation for the ith edge
+			for (int j=0; j<12; j++){ // check if the ith solved edges permutation is in the cube state (permutation) (it will be, we just need to know where) 
+				if ((((cube0->EPCO)&(15ULL<<(60-4*i)))>>(60-4*i))==(((cube->EPCO)&(15ULL<<(60-4*j)))>>(60-4*j))){
+					EO+=((cube->CPEOCN>>(28-2*j))&3ULL)<<(28-2*j);
+					break;
+				}
+			}
+		}
+	}
+
+	for (int i=0;i<8;i++){ // CO
+		if (EPCOmask>>(14-2*i)&3ULL){ 
+			for (int j=0; j<8; j++){ 
+				if ((((cube0->CPEOCN)&(15ULL<<(58-4*i)))>>(58-4*i))==(((cube->CPEOCN)&(15ULL<<(58-4*j)))>>(58-4*j))){
+					CO+=((cube->EPCO>>(14-2*j))&3ULL)<<(14-2*j);
+					break;
+				}
+			}
+		}
+	}
+
+	for (int i=0;i<12;i++){ // EP
+		inMask=0;
+		for (int j=0; j<12; j++){
+			if ((((cube0->EPCO)&(15ULL<<(60-4*j)))>>(60-4*j))==(((cube->EPCO)&(15ULL<<(60-4*i)))>>(60-4*i))){
+				inMask=1;
+				break;
+			}
+		}
+		if (inMask==0){
+			cube->EPCO=cube->EPCO&(~(15ULL<<(60-4*i)));
+		}
+	}
+
+	for (int i=0;i<8;i++){ // CP
+		inMask=0;
+		for (int j=0; j<8; j++){
+			if ((((cube0->CPEOCN)&(15ULL<<(58-4*j)))>>(58-4*j))==(((cube->CPEOCN)&(15ULL<<(58-4*i)))>>(58-4*i))){
+				inMask=1;
+				break;
+			}
+		}
+		if (inMask==0){
+			cube->CPEOCN=cube->CPEOCN&(~(15ULL<<(58-4*i)));
+		}
+	}
+
+	cube->CPEOCN=(cube->CPEOCN&(~((1ULL<<30)-1)))+EO+CN;
+	cube->EPCO=(cube->EPCO&(~((1ULL<<16)-1)))+CO;
+
+	free(cube0);
 }
 
 void applyMove(struct CUBE* cube, char move) {
@@ -245,10 +321,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<56)&cube->EPCO)>>16)|
 				(((0xfUL<<40)&cube->EPCO)>>16)|
 				(((0XfUL<<24)&cube->EPCO)<<12)|
-				(3&((((((0x3UL<<10)&cube->EPCO)>>10)+1)>>2)+(((0x3UL<<10)&cube->EPCO)>>10)+1))<<12|
-				(3&((((((0x3UL<<12)&cube->EPCO)>>12)+2)>>2)+(((0x3UL<<12)&cube->EPCO)>>12)+2))<<4|
-				(3&((((((0x3UL<<4)&cube->EPCO)>>4)+1)>>2)+(((0x3UL<<4)&cube->EPCO)>>4)+1))<<2|
-				(3&((((((0x3UL<<2)&cube->EPCO)>>2)+2)>>2)+(((0x3UL<<2)&cube->EPCO)>>2)+2))<<10|
+				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+1*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<12|
+				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+2*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<4|
+				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+1*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<2|
+				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+2*((((0x3UL<<2)&cube->EPCO)>>2)>0))))<<10|
 				(0xf0fff00ff0ffc3c3&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<50)&cube->CPEOCN)<<4)|
 				(((0xfUL<<54)&cube->CPEOCN)>>16)|
@@ -285,10 +361,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<56)&cube->EPCO)>>20)|
 				(((0xfUL<<40)&cube->EPCO)<<16)|
 				(((0XfUL<<24)&cube->EPCO)<<16)|
-				(3&((((((0x3UL<<10)&cube->EPCO)>>10)+1)>>2)+(((0x3UL<<10)&cube->EPCO)>>10)+1))<<2|
-				(3&((((((0x3UL<<12)&cube->EPCO)>>12)+2)>>2)+(((0x3UL<<12)&cube->EPCO)>>12)+2))<<10|
-				(3&((((((0x3UL<<4)&cube->EPCO)>>4)+1)>>2)+(((0x3UL<<4)&cube->EPCO)>>4)+1))<<12|
-				(3&((((((0x3UL<<2)&cube->EPCO)>>2)+2)>>2)+(((0x3UL<<2)&cube->EPCO)>>2)+2))<<4|
+				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+1*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<2|
+				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+2*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<10|
+				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+1*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<12|
+				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+2*((((0x3UL<<2)&cube->EPCO)>>2)>0))))<<4|
 				(0xf0fff00ff0ffc3c3&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<50)&cube->CPEOCN)>>16)|
 				(((0xfUL<<54)&cube->CPEOCN)>>4)|
@@ -305,10 +381,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<32)&cube->EPCO)>>16)|
 				(((0xfUL<<16)&cube->EPCO)<<28)|
 				(((0XfUL<<44)&cube->EPCO)<<4)|
-				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+1)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+1))<<8|
-				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+2)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+2))|
-				(3&((((((0x3UL)&cube->EPCO))+1)>>2)+(((0x3UL)&cube->EPCO))+1))<<6|
-				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+2)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+2))<<14|
+				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+1*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<8|
+				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+2*((((0x3UL<<8)&cube->EPCO)>>18)>0))))|
+				(3&(((((0x3UL)&cube->EPCO))+1*((((0x3UL)&cube->EPCO))>0))))<<6|
+				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+2*((((0x3UL<<6)&cube->EPCO)>>6)>0))))<<14|
 				(0xfff00ff0fff03c3c&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>12)|
 				(((0xfUL<<46)&cube->CPEOCN)>>16)|
@@ -345,10 +421,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<32)&cube->EPCO)<<16)|
 				(((0xfUL<<16)&cube->EPCO)<<16)|
 				(((0XfUL<<44)&cube->EPCO)>>28)|
-				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+1)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+1))<<6|
-				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+2)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+2))<<14|
-				(3&((((((0x3UL)&cube->EPCO))+1)>>2)+(((0x3UL)&cube->EPCO))+1))<<8|
-				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+2)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+2))|
+				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+1*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<6|
+				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+2*((((0x3UL<<8)&cube->EPCO)>>18)>0))))<<14|
+				(3&(((((0x3UL)&cube->EPCO))+1*((((0x3UL)&cube->EPCO))>0))))<<8|
+				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+2*((((0x3UL<<6)&cube->EPCO)>>6)>0))))|
 				(0xfff00ff0fff03c3c&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>16)|
 				(((0xfUL<<46)&cube->CPEOCN)<<12)|
@@ -365,10 +441,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<36)&cube->EPCO)>>16)|
 				(((0xfUL<<20)&cube->EPCO)<<12)|
 				(((0XfUL<<32)&cube->EPCO)<<20)|
-				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+1)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+1))<<10|
-				(3&((((((0x3UL<<10)&cube->EPCO)>>10)+2)>>2)+(((0x3UL<<10)&cube->EPCO)>>10)+2))<<2|
-				(3&((((((0x3UL<<2)&cube->EPCO)>>2)+1)>>2)+(((0x3UL<<2)&cube->EPCO)>>2)+1))|
-				(3&((((((0x3UL)&cube->EPCO))+2)>>2)+(((0x3UL)&cube->EPCO))+2))<<8|
+				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+1*((((0x3UL<<8)&cube->EPCO)>>8)>0))))<<10|
+				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+2*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<2|
+				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+1*((((0x3UL<<2)&cube->EPCO)>>2)>0))))|
+				(3&(((((0x3UL)&cube->EPCO))+2*((((0x3UL)&cube->EPCO))>0))))<<8|
 				(0xff0fff00ff0ff0f0&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)<<4)|
 				(((0xfUL<<50)&cube->CPEOCN)>>16)|
@@ -405,10 +481,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<36)&cube->EPCO)<<16)|
 				(((0xfUL<<20)&cube->EPCO)<<16)|
 				(((0XfUL<<32)&cube->EPCO)>>12)|
-				(3&((((((0x3UL<<8)&cube->EPCO)>>8)+1)>>2)+(((0x3UL<<8)&cube->EPCO)>>8)+1))|
-				(3&((((((0x3UL<<10)&cube->EPCO)>>10)+2)>>2)+(((0x3UL<<10)&cube->EPCO)>>10)+2))<<8|
-				(3&((((((0x3UL<<2)&cube->EPCO)>>2)+1)>>2)+(((0x3UL<<2)&cube->EPCO)>>2)+1))<<10|
-				(3&((((((0x3UL)&cube->EPCO))+2)>>2)+(((0x3UL)&cube->EPCO))+2))<<2|
+				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+1*((((0x3UL<<8)&cube->EPCO)>>8)>0))))|
+				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+2*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<8|
+				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+1*((((0x3UL<<2)&cube->EPCO)>>2)>0))))<<10|
+				(3&(((((0x3UL)&cube->EPCO))+2*((((0x3UL)&cube->EPCO))>0))))<<2|
 				(0xff0fff00ff0ff0f0&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)>>16)|
 				(((0xfUL<<50)&cube->CPEOCN)>>4)|
@@ -425,10 +501,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<44)&cube->EPCO)>>16)|
 				(((0xfUL<<28)&cube->EPCO)<<12)|
 				(((0XfUL<<40)&cube->EPCO)<<20)|
-				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+2)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+2))<<6|
-				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+1)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+1))<<4|
-				(3&((((((0x3UL<<4)&cube->EPCO)>>4)+2)>>2)+(((0x3UL<<4)&cube->EPCO)>>4)+2))<<12|
-				(3&((((((0x3UL<<12)&cube->EPCO)>>12)+1)>>2)+(((0x3UL<<12)&cube->EPCO)>>12)+1))<<14|
+				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+2*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<6|
+				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+1*((((0x3UL<<6)&cube->EPCO)>>6)>0))))<<4|
+				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+2*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<12|
+				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+1*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<14|
 				(0x0fff00ff0fff0f0f&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>16)|
 				(((0xfUL<<42)&cube->CPEOCN)>>4)|
@@ -465,10 +541,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<44)&cube->EPCO)<<16)|
 				(((0xfUL<<28)&cube->EPCO)<<16)|
 				(((0XfUL<<40)&cube->EPCO)>>12)|
-				(3&((((((0x3UL<<14)&cube->EPCO)>>14)+2)>>2)+(((0x3UL<<14)&cube->EPCO)>>14)+2))<<12|
-				(3&((((((0x3UL<<6)&cube->EPCO)>>6)+1)>>2)+(((0x3UL<<6)&cube->EPCO)>>6)+1))<<14|
-				(3&((((((0x3UL<<4)&cube->EPCO)>>4)+2)>>2)+(((0x3UL<<4)&cube->EPCO)>>4)+2))<<6|
-				(3&((((((0x3UL<<12)&cube->EPCO)>>12)+1)>>2)+(((0x3UL<<12)&cube->EPCO)>>12)+1))<<4|
+				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+2*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<12|
+				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+1*((((0x3UL<<6)&cube->EPCO)>>6)>0))))<<14|
+				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+2*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<6|
+				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+1*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<4|
 				(0x0fff00ff0fff0f0f&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>4)|
 				(((0xfUL<<42)&cube->CPEOCN)<<16)|
@@ -776,7 +852,7 @@ void reduceSequence(struct solution* solution) {
 			}
 			else if (this<=18) { // this alg only works for UDRLFB, add variant for the others
 				if ((((last-1)/3)==((this-1)/3+1))&&(((last-1)/6)==((this-1)/6)))	{
-					solution->sol1=(solution->sol1)&(~(4095ULL<<(6*(m-1))))|(this<<(6*(m-1)))|(last<<(6*m));
+					solution->sol1=((solution->sol1)&(~(4095ULL<<(6*(m-1)))))|(this<<(6*(m-1)))|(last<<(6*m));
 					allgood=0;	
 				}
 				else if (((this-1)/3)==((last-1)/3)) {
@@ -798,7 +874,7 @@ void reduceSequence(struct solution* solution) {
 		if (this<=18) { // this alg only works for UDRLFB, add variant for the others
 			if ((((last-1)/3)==((this-1)/3+1))&&(((last-1)/6)==((this-1)/6)))	{
 				allgood=0;	
-				solution->sol1=(solution->sol1)&(~(63ULL<<(6*length)))|(this<<(6*length));	
+				solution->sol1=((solution->sol1)&(~(63ULL<<(6*length))))|(this<<(6*length));	
 				solution->sol2=(((solution->sol2)>>6)<<6)+last;	
 			}
 			else if (((this-1)/3)==((last-1)/3)) {
@@ -809,7 +885,7 @@ void reduceSequence(struct solution* solution) {
 				}
 				else { // combine moves
 					allgood=0;	
-					solution->sol1=(solution->sol1)&(~(63ULL<<(6*length)))|(((((this-1)%3+1)+((last-1)%3+1))%4+((this-1)/3)*3)<<(6*length));
+					solution->sol1=((solution->sol1)&(~(63ULL<<(6*length))))|(((((this-1)%3+1)+((last-1)%3+1))%4+((this-1)/3)*3)<<(6*length));
 					solution->sol2=((solution->sol2)>>6);	
 				}
 			}
@@ -827,7 +903,7 @@ void reduceSequence(struct solution* solution) {
 			else if (this<=18) { // this alg only works for UDRLFB, add variant for the others
 				if ((((last-1)/3)==((this-1)/3+1))&&(((last-1)/6)==((this-1)/6)))	{
 					allgood=0;	
-					solution->sol2=(solution->sol2)&(~(4095ULL<<(6*(m-1))))|(this<<(6*(m-1)))|(last<<(6*m));	
+					solution->sol2=((solution->sol2)&(~(4095ULL<<(6*(m-1)))))|(this<<(6*(m-1)))|(last<<(6*m));	
 				}
 				else if (((this-1)/3)==((last-1)/3)) {
 					if (((this-1)%3+(last-1)%3)==2) { // cancellation
@@ -1008,7 +1084,8 @@ void *parallelSearch(void *args) {
 			char *sol2=readableSequence(pArgs->candidates[i]);
 			printf("%s --- %s\n",sol2,sol1);
 			free(sol1);
-			free(sol2);*/
+			free(sol2);
+			*/
 			insertSolution(solutions,pArgs->candidates[i],reverseSequence(*out));
 			quantity++;
 		}
@@ -1022,7 +1099,7 @@ void *parallelSearch(void *args) {
 	//pthread_exit(solutions);
 }
 
-void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
+void solveStep(struct STEP* step, struct CUBE* cube0, int quantity) {
 	
 	long tstart, tend;
 	struct timeval timecheck;
@@ -1030,11 +1107,16 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 	tstart=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
 
 
+	struct CUBE *cubecopy=(struct CUBE*)malloc(sizeof(struct CUBE));
+	cubecopy->EPCO=cube0->EPCO;
+	cubecopy->CPEOCN=cube0->CPEOCN;
 
-	struct CUBE *cube0=(struct CUBE*)malloc(sizeof(struct CUBE));
-	revertCube(cube0);
-	applyMask(cube0,step->EPCOmask,step->CPEOCNmask);
-	applyMoves(moves,cube0);
+
+	//struct CUBE *cube0=(struct CUBE*)malloc(sizeof(struct CUBE));
+	//revertCube(cube0);
+	//applyMask(cube0,step->EPCOmask,step->CPEOCNmask);
+
+	applyMaskScrambled(cubecopy,step->EPCOmask,step->CPEOCNmask);
 
 	// generate candidate move sequences
 	uint64_t *candidates;
@@ -1074,10 +1156,10 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 		args->candidates=candidates;
 		args->start=i*c/nThreads;
 		args->end=(i+1)*c/nThreads;
-		args->cube=cube0;
+		args->cube=cubecopy;
 		args->step=step;
 		args->Nbits=Nbits;
-		args->moves=moves;
+		//args->moves=moves;
 		pthread_create(&threads[i], NULL, parallelSearch,(void *)args);
 	//	printf("%u, %u",i*c/nThreads,(i+1)*c/nThreads);
 
@@ -1105,7 +1187,7 @@ void solveStep(struct STEP* step, struct MOVES* moves, int quantity) {
 	gettimeofday(&timecheck,NULL);
 	tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
 	
-	printf("\n\t%d unique solutions found & sorted in %ld ms, %d reported.\n",numSolutions,(tend-tstart),quantity);
+	printf("\n\t\t%d unique solutions found & sorted in %ld ms, %d reported.\n",numSolutions,(tend-tstart),quantity);
 	
 	return;
 }

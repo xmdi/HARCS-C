@@ -82,18 +82,8 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		printf("\n\tRandom state applied.\n");
 		}
 	else if (strcmp(buffer,"debug")==0){
-		struct solution* solution=NULL;
-		solution=(struct solution*)malloc(sizeof(struct solution));
-	
-		solution->next=NULL;
-		solution->sol1=0b1000000101010001001101000110001111;
-		solution->sol2=0b10000001000001111001010001111001001;
 
-		printSolutions(solution);
-		
-		reduceSequence(solution);
 
-		printSolutions(solution);
 	}
 else if (strcmp(buffer,"petrus")==0){	
 		struct STEP *s3x2x2=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
@@ -105,12 +95,14 @@ else if (strcmp(buffer,"petrus")==0){
 		initStep(sF2L,"F2L",1,5,5,0x0000ffffffff00ff,0x00003fffffffffff,NULL);
 	}
 	else if (strcmp(buffer,"solve")==0){	
-		struct STEP *step=method->first;
+		struct STEP *step=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
+		step=method->first;
 		while (step!=NULL)
 			{
 				printf("\n\tSolving %s:\n",step->name);
-				solveStep(step,moves,6);
-				break;
+				solveStep(step,basecube,6);
+				
+				printf("\n\tSolving %s:\n",step->name);
 				/*char new[999];
 				strcpy(new,moves->list);
 				strcat(new,moveList[i]);
@@ -119,6 +111,7 @@ else if (strcmp(buffer,"petrus")==0){
 	
 				step=step->next;
 			}
+			printCube(basecube);
 	}
 	else
 		printf("\n\tCommand not recognized.\n");
