@@ -38,6 +38,11 @@ struct STEP {
 	struct STEP *next;
 };
 
+struct state {
+	struct CUBE *cube;
+	struct solution *solution;
+};
+
 struct METHOD {
 	char name[32];
 	struct STEP *first;
@@ -59,6 +64,18 @@ struct parallelArgs {
 	struct STEP* step;
 	struct MOVES* moves;
 	unsigned char Nbits;
+	int start;
+	int end;
+};
+
+struct parallelAnalyzeArgs {
+	uint64_t *candidates;
+	int nCandidates;
+	struct CUBE* cube;
+	struct STEP* step;
+	struct MOVES* moves;
+	unsigned char Nbits;
+	struct state** states;
 	int start;
 	int end;
 };
@@ -106,8 +123,8 @@ void revertCube(struct CUBE* cube) {
 	cube->CPEOCN=0b00010010001101000101011001111000111111111111111111111111001010;
 }
 
-void randomizeCube(struct CUBE* cube) {	
-	
+void randomizeCube(struct CUBE* cube) {	// fisher-yates shuffle
+
 	int s,i;
 	bool parity=0;
 
@@ -1192,6 +1209,125 @@ void solveStep(struct STEP* step, struct CUBE* cube0, int quantity) {
 	return;
 }
 
+void *parallelAnalyze(void *args) {
+	struct parallelAnalyzeArgs *pArgs=(struct parallelAnalyzeArgs*) args;
+	struct CUBE cube0;
+	struct CUBE cube1;
+	uint64_t *out=NULL;	
+	struct solution* solutions=NULL;
+	solutions=(struct solution*)malloc(sizeof(struct solution));
+	// loop over certain portion of the cube states
+	for (int i=(pArgs->start); i<(pArgs->end); i++) {
+		cube0.EPCO=pArgs->states[i]->cube->EPCO;
+		cube0.CPEOCN=pArgs->states[i]->cube->CPEOCN;
+		applyMaskScrambled(&cube0,pArgs->step->EPCOmask,pArgs->step->CPEOCNmask);
+		// loop over candidates looking for solution
+		for (int j=0; j<pArgs->nCandidates; j++) {
+			cube1.EPCO=cube0.EPCO;
+			cube1.CPEOCN=cube0.CPEOCN;
+			applySequence(pArgs->candidates[j], &cube0);
+			unsigned int key=hash(pArgs->Nbits,&cube0);
+			out=htRetrieve(pArgs->step->table,key,&cube0.EPCO,&cube0.CPEOCN);
+			if (out) { // solution found
+				struct solution* solutions=NULL;
+				solutions=(struct solution*)malloc(sizeof(struct solution));
+				insertSolution(solutions,pArgs->candidates[j],reverseSequence(*out)); // can get rid of this and put it in the following 2
+				pArgs->states[i]->solution->sol1=solutions->sol1;
+				pArgs->states[i]->solution->sol2=solutions->sol2;
+				break;
+			}
+		}
+	}
+	free(pArgs);
+	pthread_exit(NULL);
+}
+
+
+
+void analyze(struct METHOD* method, int quantity) {
+
+	printf("\n\tAnalyzing method: %s\n",method->name);
+
+	//struct state* states=(struct state*)malloc(quantity*sizeof(struct state)); // init array
+	struct state **states=(struct state**)malloc(quantity*sizeof(struct state*)); // init array
+	//struct state* states[quantity]; // init array
+
+	for (int i=0;i<quantity;i++){ // fill array with random states
+		states[i]=malloc(sizeof(struct state));
+		struct CUBE *cube=(struct CUBE*)malloc(sizeof(struct CUBE));
+		struct solution* solutions=(struct solution*)malloc(sizeof(struct solution));
+		revertCube(cube);
+		randomizeCube(cube);
+		states[i]->cube=cube;
+		states[i]->solution=solutions;
+}
+
+	struct STEP* step=method->first;
+
+	// loop over steps
+	while (step!=NULL){
+		printf("\n\t%s\n",step->name);
+
+		// generate candidate move sequences
+		uint64_t *candidates;
+		candidates = (uint64_t*)malloc(estimateSequenceCount(step->movegroup,step->searchDepth)*sizeof(uint64_t));
+		int c=1;
+		int start=0;
+		int end=1;
+		for (char i=0; i<(step->searchDepth); i++) {
+			for (int s=start; s<end; s++) {
+				addLayers(step->movegroup,candidates[s],i,candidates,&c);
+			}
+			start=end;
+			end=c;
+		}
+	
+		candidates=(uint64_t*)realloc(candidates,c*sizeof(uint64_t));
+	
+		unsigned char tmp=0;
+		while (power(2,tmp)<=c) {
+			tmp++;
+		}
+		const unsigned char Nbits=tmp; // THIS CAN BE CHANGED! more memory for less collisions by increasing Nbits
+	
+		// divide them up into groups for each thread
+	
+		pthread_t threads[nThreads];
+		for (int i=0; i<(nThreads); i++) {
+			struct parallelAnalyzeArgs *args=(struct parallelAnalyzeArgs *)malloc(sizeof(struct parallelAnalyzeArgs));
+			args->candidates=candidates;
+			args->nCandidates=c;
+			args->start=i*quantity/nThreads;
+			args->end=(i+1)*quantity/nThreads;
+			args->states=states;
+			args->step=step;
+			args->Nbits=Nbits;
+			pthread_create(&threads[i], NULL, parallelAnalyze,(void *)args);
+			//free(args);
+		}
+
+		for (int i=0; i<(nThreads); i++) {
+			pthread_join(threads[i],NULL);
+		}
+
+
+
+		for (int i=0;i<quantity;i++) {
+			printf("\n%d: %s..%s",i,readableSequence(states[i]->solution->sol1),readableSequence(states[i]->solution->sol2));
+		}
+
+		// ADD SOMETHING TO UPDATE THE STATES[i]->CUBE with new data
+
+
+		step=step->next;
+	}
+
+
+	printf("made it\n");
+
+}
+
+
 int runBenchmark(long quantity, char move) {
 	struct CUBE cube;
 	revertCube(&cube);
@@ -1235,37 +1371,3 @@ void benchmarkHashTable(char movegroup, char depth) {
 	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
 	printf("%f seconds\n",time_used);
 }
-
-/*void initPetrus() {
-	struct STEP s3x2x2;
-	initStep(&s3x2x2,"3x2x2",1,5,5,0x0000f00ff0ff00c3,0x00003c03c030f3ff);
-	//0000 0000 0000 0000 1111 0000 0000 1111 1111 0000 1111 1111 00 00 00 00 11 00 00 11
-	//0000 0000 0000 0000 1111 0000 0000 1111 00 00 00 00 11 00 00 11 11 00 11 11 111 111
-
-
-
-	//0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 11 11 11 11 11 11 11 11 
-//	cube->EPCO=0b0001001000110100010101100111100010011010101111001111111111111111;
-	//0001 0010 0011 0100 0101 0110 0111 1000 11 11 11 11 11 11 11 11 11 11 11 11 001 010
-//	cube->CPEOCN=0b00010010001101000101011001111000111111111111111111111111001010;
-	
-	struct CUBE cube;
-	revertCube(&cube);
-	applyMask(&cube,0x0000f00ff0ff00c3,0x00003c03c030f3ff);
-
-	applyMove(&cube,1);
-	applyMove(&cube,11);
-	applyMove(&cube,4);
-	applyMove(&cube,8);
-	applyMove(&cube,1);
-	applyMove(&cube,14);
-	applyMove(&cube,4);
-	applyMove(&cube,9);
-
-	printf("scramble:\n");
-	printCube(&cube);
-
-	solveStep(&s3x2x2,&cube);
-
-	printf("OUT");
-}*/

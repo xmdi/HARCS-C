@@ -4,6 +4,7 @@
 #include "main.c"
 
 bool isMove=0;
+bool isAnalyze=0;
 //char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
 
 void clear() {
@@ -65,8 +66,25 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 			printf("\n\tSequence applied.\n");
 		}
 	}
+	else if (isAnalyze){
+		int quantity=atoi(buffer);
+		if (quantity){
+			analyze(method,quantity);
+		}
+		else{
+			printf("\n\tInvalid quantity for analyze.\n");
+		}
+	}
 	else if (strcmp(buffer,"apply")==0)
 		isMove=1;
+	else if (strcmp(buffer,"analyze")==0){
+		if (method->first==NULL){
+			printf("\n\tNo method defined.\n");
+		}
+		else{
+			isAnalyze=1;
+		}
+		}
 	else if (strcmp(buffer,"revert")==0){
 		revertCube(basecube);
 		printf("\n\tCube reverted to solved.\n");
@@ -137,6 +155,7 @@ int main() {
 	struct CUBE *basecube=(struct CUBE*)malloc(sizeof(struct CUBE));
 	revertCube(basecube);
 	struct METHOD *method=(struct METHOD*)malloc(sizeof(struct METHOD));
+	method->first=NULL;
 	struct MOVES *moves=(struct MOVES*)malloc(sizeof(struct MOVES));
 
 	clear();
