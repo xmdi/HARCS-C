@@ -9,6 +9,9 @@ int nThreads=8;
 
 typedef enum {false, true} bool;
 
+unsigned char cw[]={0,2,3,1};
+unsigned char acw[]={0,3,1,2};
+
 char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
 
 struct CUBE {
@@ -32,10 +35,18 @@ struct STEP {
 	char movegroup;	
 	char tableDepth;
 	char searchDepth;
+	char Nbits;
 	ht_t *table;
 	char name[32];
 	uint64_t EPCOmask,CPEOCNmask;
+	int min, max;
+	float mean;	
+	struct histogram *hist;
 	struct STEP *next;
+};
+
+struct histogram {
+	int table[21];
 };
 
 struct state {
@@ -159,12 +170,12 @@ void randomizeCube(struct CUBE* cube) {	// fisher-yates shuffle
 		if ((i==11) && !flips) {
 			break;
 		}
-		if (rand()%(2)){
+		if ((rand()%(2)) || ((i==11) && flips)){
 			cube->CPEOCN^=(2ULL<<(28-2*i));
 			flips=!flips;
 		}
 	}
-
+	
 	int spins=0;
 
 	for (i=0;i<7;i++){
@@ -185,7 +196,9 @@ void applyMask(struct CUBE* cube, uint64_t EPCOmask, uint64_t CPEOCNmask) {
 
 void applyMaskScrambled(struct CUBE* cube, uint64_t EPCOmask, uint64_t CPEOCNmask) {
 	struct CUBE *cube0=(struct CUBE*)malloc(sizeof(struct CUBE));
+	struct CUBE *cubeS=(struct CUBE*)malloc(sizeof(struct CUBE));
 	revertCube(cube0);
+	revertCube(cubeS);
 	cube0->EPCO&=EPCOmask;
 	cube0->CPEOCN&=CPEOCNmask;
 	bool inMask=0;
@@ -208,7 +221,7 @@ void applyMaskScrambled(struct CUBE* cube, uint64_t EPCOmask, uint64_t CPEOCNmas
 	for (int i=0;i<12;i++){ // EO
 		if (CPEOCNmask>>(29-2*i)&1ULL){ // if we care about the orientation for the ith edge
 			for (int j=0; j<12; j++){ // check if the ith solved edges permutation is in the cube state (permutation) (it will be, we just need to know where) 
-				if ((((cube0->EPCO)&(15ULL<<(60-4*i)))>>(60-4*i))==(((cube->EPCO)&(15ULL<<(60-4*j)))>>(60-4*j))){
+				if ((((cubeS->EPCO)&(15ULL<<(60-4*i)))>>(60-4*i))==(((cube->EPCO)&(15ULL<<(60-4*j)))>>(60-4*j))){
 					EO+=((cube->CPEOCN>>(28-2*j))&3ULL)<<(28-2*j);
 					break;
 				}
@@ -219,7 +232,7 @@ void applyMaskScrambled(struct CUBE* cube, uint64_t EPCOmask, uint64_t CPEOCNmas
 	for (int i=0;i<8;i++){ // CO
 		if (EPCOmask>>(14-2*i)&3ULL){ 
 			for (int j=0; j<8; j++){ 
-				if ((((cube0->CPEOCN)&(15ULL<<(58-4*i)))>>(58-4*i))==(((cube->CPEOCN)&(15ULL<<(58-4*j)))>>(58-4*j))){
+				if ((((cubeS->CPEOCN)&(15ULL<<(58-4*i)))>>(58-4*i))==(((cube->CPEOCN)&(15ULL<<(58-4*j)))>>(58-4*j))){
 					CO+=((cube->EPCO>>(14-2*j))&3ULL)<<(14-2*j);
 					break;
 				}
@@ -333,15 +346,15 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfcUL<<6)&cube->CPEOCN)>>2)|
 				(0x3fffc0003fffc03f&cube->CPEOCN);
 			break;
-		case 7: // R 
+		case 7: // R
 			cube->EPCO=(((0xfUL<<36)&cube->EPCO)<<20)|
 				(((0xfUL<<56)&cube->EPCO)>>16)|
 				(((0xfUL<<40)&cube->EPCO)>>16)|
 				(((0XfUL<<24)&cube->EPCO)<<12)|
-				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+1*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<12|
-				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+2*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<4|
-				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+1*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<2|
-				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+2*((((0x3UL<<2)&cube->EPCO)>>2)>0))))<<10|
+				((cw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<12|
+				((acw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<4|
+				((cw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<2|
+				((acw[(((0x3UL<<2)&cube->EPCO)>>2)]))<<10|
 				(0xf0fff00ff0ffc3c3&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<50)&cube->CPEOCN)<<4)|
 				(((0xfUL<<54)&cube->CPEOCN)>>16)|
@@ -378,10 +391,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<56)&cube->EPCO)>>20)|
 				(((0xfUL<<40)&cube->EPCO)<<16)|
 				(((0XfUL<<24)&cube->EPCO)<<16)|
-				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+1*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<2|
-				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+2*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<10|
-				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+1*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<12|
-				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+2*((((0x3UL<<2)&cube->EPCO)>>2)>0))))<<4|
+				((cw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<2|
+				((acw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<10|
+				((cw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<12|
+				((acw[(((0x3UL<<2)&cube->EPCO)>>2)]))<<4|
 				(0xf0fff00ff0ffc3c3&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<50)&cube->CPEOCN)>>16)|
 				(((0xfUL<<54)&cube->CPEOCN)>>4)|
@@ -398,10 +411,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<32)&cube->EPCO)>>16)|
 				(((0xfUL<<16)&cube->EPCO)<<28)|
 				(((0XfUL<<44)&cube->EPCO)<<4)|
-				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+1*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<8|
-				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+2*((((0x3UL<<8)&cube->EPCO)>>18)>0))))|
-				(3&(((((0x3UL)&cube->EPCO))+1*((((0x3UL)&cube->EPCO))>0))))<<6|
-				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+2*((((0x3UL<<6)&cube->EPCO)>>6)>0))))<<14|
+				((cw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<8|
+				((acw[(((0x3UL<<8)&cube->EPCO)>>8)]))|
+				((cw[(((0x3UL)&cube->EPCO))]))<<6|
+				((acw[(((0x3UL<<6)&cube->EPCO)>>6)]))<<14|
 				(0xfff00ff0fff03c3c&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>12)|
 				(((0xfUL<<46)&cube->CPEOCN)>>16)|
@@ -438,10 +451,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<32)&cube->EPCO)<<16)|
 				(((0xfUL<<16)&cube->EPCO)<<16)|
 				(((0XfUL<<44)&cube->EPCO)>>28)|
-				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+1*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<6|
-				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+2*((((0x3UL<<8)&cube->EPCO)>>18)>0))))<<14|
-				(3&(((((0x3UL)&cube->EPCO))+1*((((0x3UL)&cube->EPCO))>0))))<<8|
-				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+2*((((0x3UL<<6)&cube->EPCO)>>6)>0))))|
+				((cw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<6|
+				((acw[(((0x3UL<<8)&cube->EPCO)>>8)]))<<14|
+				((cw[(((0x3UL)&cube->EPCO))]))<<8|
+				((acw[(((0x3UL<<6)&cube->EPCO)>>6)]))|
 				(0xfff00ff0fff03c3c&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>16)|
 				(((0xfUL<<46)&cube->CPEOCN)<<12)|
@@ -458,10 +471,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<36)&cube->EPCO)>>16)|
 				(((0xfUL<<20)&cube->EPCO)<<12)|
 				(((0XfUL<<32)&cube->EPCO)<<20)|
-				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+1*((((0x3UL<<8)&cube->EPCO)>>8)>0))))<<10|
-				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+2*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<2|
-				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+1*((((0x3UL<<2)&cube->EPCO)>>2)>0))))|
-				(3&(((((0x3UL)&cube->EPCO))+2*((((0x3UL)&cube->EPCO))>0))))<<8|
+				((cw[(((0x3UL<<8)&cube->EPCO)>>8)]))<<10|
+				((acw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<2|
+				((cw[(((0x3UL<<2)&cube->EPCO)>>2)]))|
+				((acw[(((0x3UL)&cube->EPCO))]))<<8|
 				(0xff0fff00ff0ff0f0&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)<<4)|
 				(((0xfUL<<50)&cube->CPEOCN)>>16)|
@@ -498,10 +511,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<36)&cube->EPCO)<<16)|
 				(((0xfUL<<20)&cube->EPCO)<<16)|
 				(((0XfUL<<32)&cube->EPCO)>>12)|
-				(3&(((((0x3UL<<8)&cube->EPCO)>>8)+1*((((0x3UL<<8)&cube->EPCO)>>8)>0))))|
-				(3&(((((0x3UL<<10)&cube->EPCO)>>10)+2*((((0x3UL<<10)&cube->EPCO)>>10)>0))))<<8|
-				(3&(((((0x3UL<<2)&cube->EPCO)>>2)+1*((((0x3UL<<2)&cube->EPCO)>>2)>0))))<<10|
-				(3&(((((0x3UL)&cube->EPCO))+2*((((0x3UL)&cube->EPCO))>0))))<<2|
+				((cw[(((0x3UL<<8)&cube->EPCO)>>8)]))|
+				((acw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<8|
+				((cw[(((0x3UL<<2)&cube->EPCO)>>2)]))<<10|
+				((acw[(((0x3UL)&cube->EPCO))]))<<2|
 				(0xff0fff00ff0ff0f0&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)>>16)|
 				(((0xfUL<<50)&cube->CPEOCN)>>4)|
@@ -518,10 +531,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<44)&cube->EPCO)>>16)|
 				(((0xfUL<<28)&cube->EPCO)<<12)|
 				(((0XfUL<<40)&cube->EPCO)<<20)|
-				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+2*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<6|
-				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+1*((((0x3UL<<6)&cube->EPCO)>>6)>0))))<<4|
-				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+2*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<12|
-				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+1*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<14|
+				((acw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<6|
+				((cw[(((0x3UL<<6)&cube->EPCO)>>6)]))<<4|
+				((acw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<12|
+				((cw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<14|
 				(0x0fff00ff0fff0f0f&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>16)|
 				(((0xfUL<<42)&cube->CPEOCN)>>4)|
@@ -558,10 +571,10 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<44)&cube->EPCO)<<16)|
 				(((0xfUL<<28)&cube->EPCO)<<16)|
 				(((0XfUL<<40)&cube->EPCO)>>12)|
-				(3&(((((0x3UL<<14)&cube->EPCO)>>14)+2*((((0x3UL<<14)&cube->EPCO)>>14)>0))))<<12|
-				(3&(((((0x3UL<<6)&cube->EPCO)>>6)+1*((((0x3UL<<6)&cube->EPCO)>>6)>0))))<<14|
-				(3&(((((0x3UL<<4)&cube->EPCO)>>4)+2*((((0x3UL<<4)&cube->EPCO)>>4)>0))))<<6|
-				(3&(((((0x3UL<<12)&cube->EPCO)>>12)+1*((((0x3UL<<12)&cube->EPCO)>>12)>0))))<<4|
+				((acw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<12|
+				((cw[(((0x3UL<<6)&cube->EPCO)>>6)]))<<14|
+				((acw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<6|
+				((cw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<4|
 				(0x0fff00ff0fff0f0f&cube->EPCO);
 			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>4)|
 				(((0xfUL<<42)&cube->CPEOCN)<<16)|
@@ -599,7 +612,7 @@ char *readableSequence(uint64_t sequence) {
 
 void addLayers(char movegroup, uint64_t baseSequence, char depth, uint64_t *candidates, int *c) {
 	const unsigned char axes[]={1,1,0,0,2,2};
-	if (movegroup==1) {
+	if (movegroup==1) { // {U,D,R,L,F,B}
 		for (int64_t i=1; i<19; i++) {
 			// currently makes sure no moves that ought to cancel U U2 and assures U never follows D, etc
 			if (depth==0) {
@@ -611,6 +624,36 @@ void addLayers(char movegroup, uint64_t baseSequence, char depth, uint64_t *cand
 				}
 			}
 		} 
+	}
+	else if(movegroup==2) { // {U,R,F,B}
+		// all these movegroups can be combined into one single thing, to implement later
+		int64_t is[]={1,2,3,7,8,9,13,14,15,16,17,18};
+		for (int64_t j=0; j<12; j++) {
+			int64_t i=is[j];
+			if (depth==0) {
+				candidates[(*c)++]=baseSequence+(i<<(6*depth));
+			}
+			else if (((i-1)/3)!=((((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1)))-1)/3)) {
+				if (!((i<((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1))))&(axes[(i-1)/3]==axes[(((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1)))-1)/3]))) {
+					candidates[(*c)++]=baseSequence+(i<<(6*depth));
+				}
+			}
+		}
+	}
+	else if(movegroup==3) { // {U,R}
+		// all these movegroups can be combined into one single thing, to implement later
+		int64_t is[]={1,2,3,7,8,9};
+		for (int64_t j=0; j<6; j++) {
+			int64_t i=is[j];
+			if (depth==0) {
+				candidates[(*c)++]=baseSequence+(i<<(6*depth));
+			}
+			else if (((i-1)/3)!=((((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1)))-1)/3)) {
+				if (!((i<((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1))))&(axes[(i-1)/3]==axes[(((baseSequence&(63UL<<(6*(depth-1))))>>(6*(depth-1)))-1)/3]))) {
+					candidates[(*c)++]=baseSequence+(i<<(6*depth));
+				}
+			}
+		}
 	}
 }
 
@@ -640,7 +683,7 @@ void applyMoves(struct MOVES* moves, struct CUBE* cube) {
 	}
 }
 
-unsigned int hash(const unsigned char Nbits, struct CUBE* cube) { // fibonnaci hash
+unsigned int hash(char Nbits, struct CUBE* cube) { // fibonnaci hash
 	uint64_t mask=0;
 	for (int i=0; i<Nbits; i++) {
 		mask+=(1<<i); // or just do 2^N-1
@@ -727,19 +770,17 @@ uint64_t *htRetrieve(ht_t *hashtable, unsigned int key, uint64_t *EPCO, uint64_t
 }
 
 long estimateSequenceCount(char movegroup, char depth) {
-	const unsigned char movesInGroup[]={18};
+	const unsigned char movesInGroup[]={18,12,6};
 	long out=1;
 	long lastLayer=1;
-	if (movegroup==1) {
-		for (int d=0; d<depth; d++) {
-			lastLayer=lastLayer*(movesInGroup[movegroup-1]-(d>1)*3);
-			out+=lastLayer;
-		}
+	for (int d=0; d<depth; d++) {
+		lastLayer=lastLayer*(movesInGroup[movegroup-1]-(d>1)*3);
+		out+=lastLayer;
 	}
 	return out;
 }
 
-ht_t *createTable(char movegroup, char depth, uint64_t EPCOmask, uint64_t CPEOCNmask) {
+ht_t *createTable(char movegroup, char depth, uint64_t EPCOmask, uint64_t CPEOCNmask, struct STEP * step) {
 
 	// generate candidate move sequences
 	uint64_t *candidates;
@@ -762,7 +803,10 @@ ht_t *createTable(char movegroup, char depth, uint64_t EPCOmask, uint64_t CPEOCN
 		tmp++;
 	}
 	const unsigned char Nbits=tmp; // THIS CAN BE CHANGED! more memory for less collisions by increasing Nbits
-	
+	if (step!=NULL){
+		step->Nbits=Nbits;
+	}
+
 	ht_t *ht = htCreate(power(2,Nbits));
 	
 	struct CUBE cube;
@@ -775,6 +819,7 @@ ht_t *createTable(char movegroup, char depth, uint64_t EPCOmask, uint64_t CPEOCN
 		applySequence(candidates[i],&cube);
 		unsigned int key=hash(Nbits,&cube);
 		htInsert(ht,key,&cube.EPCO,&cube.CPEOCN,&candidates[i],&collisions);
+	//	printf("\n%s",readableSequence(candidates[i]));
 	}
 	
 	printf("\n\t\t%d collisions for %d states in %ld buckets in ",collisions,c,power(2,Nbits));
@@ -803,7 +848,7 @@ void initStep(struct STEP* step, char name[], char movegroup, char tableDepth, c
 	step->next=next;
 	
 	printf("\n\tTabulating %s:",name);
-	step->table=createTable(movegroup,tableDepth,EPCOmask,CPEOCNmask);
+	step->table=createTable(movegroup,tableDepth,EPCOmask,CPEOCNmask,step);
 	gettimeofday(&timecheck,NULL);
 	tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
 	printf("%ld ms\n",(tend-tstart));
@@ -1175,7 +1220,7 @@ void solveStep(struct STEP* step, struct CUBE* cube0, int quantity) {
 		args->end=(i+1)*c/nThreads;
 		args->cube=cubecopy;
 		args->step=step;
-		args->Nbits=Nbits;
+		args->Nbits=step->Nbits;
 		//args->moves=moves;
 		pthread_create(&threads[i], NULL, parallelSearch,(void *)args);
 	//	printf("%u, %u",i*c/nThreads,(i+1)*c/nThreads);
@@ -1221,16 +1266,24 @@ void *parallelAnalyze(void *args) {
 		cube0.EPCO=pArgs->states[i]->cube->EPCO;
 		cube0.CPEOCN=pArgs->states[i]->cube->CPEOCN;
 		applyMaskScrambled(&cube0,pArgs->step->EPCOmask,pArgs->step->CPEOCNmask);
-		// loop over candidates looking for solution
+	//	 loop over candidates looking for solution
 		for (int j=0; j<pArgs->nCandidates; j++) {
 			cube1.EPCO=cube0.EPCO;
 			cube1.CPEOCN=cube0.CPEOCN;
-			applySequence(pArgs->candidates[j], &cube0);
-			unsigned int key=hash(pArgs->Nbits,&cube0);
-			out=htRetrieve(pArgs->step->table,key,&cube0.EPCO,&cube0.CPEOCN);
+			applySequence(pArgs->candidates[j], &cube1);
+	/*		if (strcmp(pArgs->step->name,"3x2x2")==0){
+				printf("looking:\n");
+				printf(" applying: %s\n",readableSequence(pArgs->candidates[j]));
+				printCube(&cube1);
+				getchar();
+			}
+*/
+			unsigned int key=hash(pArgs->Nbits,&cube1);
+			out=htRetrieve(pArgs->step->table,key,&cube1.EPCO,&cube1.CPEOCN);
 			if (out) { // solution found
-				struct solution* solutions=NULL;
-				solutions=(struct solution*)malloc(sizeof(struct solution));
+				//	struct solution* solutions=NULL;
+				//	solutions=(struct solution*)malloc(sizeof(struct solution));
+				struct solution* solutions=(struct solution*)calloc(1,sizeof(struct solution));
 				insertSolution(solutions,pArgs->candidates[j],reverseSequence(*out)); // can get rid of this and put it in the following 2
 				pArgs->states[i]->solution->sol1=solutions->sol1;
 				pArgs->states[i]->solution->sol2=solutions->sol2;
@@ -1242,32 +1295,74 @@ void *parallelAnalyze(void *args) {
 	pthread_exit(NULL);
 }
 
-
+void plotHistogram(struct STEP * step) {
+	printf("\n\t%s Histogram:",step->name);
+	int max=0;
+	int width=50;
+	for (int i=0; i<=21; i++) {
+		if (step->hist->table[i]>max) {
+			max=step->hist->table[i];
+		}
+	}
+	for (int i=0; i<=21; i++) {
+		if (step->hist->table[i]) {
+			printf("\n\t%d\t: ",i);
+			for (int j=0; j<((float)(width*step->hist->table[i]))/max; j++){
+				printf("=");
+			}
+			printf("  (%d)",step->hist->table[i]);
+		}
+	}
+	printf("\n");
+}
 
 void analyze(struct METHOD* method, int quantity) {
 
-	printf("\n\tAnalyzing method: %s\n",method->name);
+	long tstart, tend;
+	struct timeval timecheck;
+	gettimeofday(&timecheck,NULL);
+	tstart=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
 
-	//struct state* states=(struct state*)malloc(quantity*sizeof(struct state)); // init array
-	struct state **states=(struct state**)malloc(quantity*sizeof(struct state*)); // init array
-	//struct state* states[quantity]; // init array
+	printf("\n\tAnalyzing method: %s\n",method->name);
+	printf("\n\tSTEP\tPRE\tSEARCH\tPOST");
+	printf("\n\t----------------------------");
+	printf("\n\tINIT");
+	
+	//struct state **states=(struct state**)malloc(quantity*sizeof(struct state*)); // init array
+	struct state **states=(struct state**)calloc(quantity,sizeof(struct state*)); // init array
 
 	for (int i=0;i<quantity;i++){ // fill array with random states
 		states[i]=malloc(sizeof(struct state));
 		struct CUBE *cube=(struct CUBE*)malloc(sizeof(struct CUBE));
-		struct solution* solutions=(struct solution*)malloc(sizeof(struct solution));
+//		struct solution* solutions=(struct solution*)malloc(sizeof(struct solution));
+		struct solution* solutions=(struct solution*)calloc(1,sizeof(struct solution));
 		revertCube(cube);
 		randomizeCube(cube);
 		states[i]->cube=cube;
 		states[i]->solution=solutions;
-}
-
+	}
+	
+	gettimeofday(&timecheck,NULL);
+	tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+	printf("\t%ld ms",(tend-tstart));
+	
 	struct STEP* step=method->first;
 
 	// loop over steps
 	while (step!=NULL){
-		printf("\n\t%s\n",step->name);
+		
+		printf("\n\t%s",step->name);
+	
+		step->min=0;
+		step->max=0;
+		step->mean=0;
+		
+		struct histogram *hist=(struct histogram*)calloc(1,sizeof(struct histogram));
+		step->hist=hist;
 
+		gettimeofday(&timecheck,NULL);
+		tstart=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+	
 		// generate candidate move sequences
 		uint64_t *candidates;
 		candidates = (uint64_t*)malloc(estimateSequenceCount(step->movegroup,step->searchDepth)*sizeof(uint64_t));
@@ -1288,8 +1383,13 @@ void analyze(struct METHOD* method, int quantity) {
 		while (power(2,tmp)<=c) {
 			tmp++;
 		}
-		const unsigned char Nbits=tmp; // THIS CAN BE CHANGED! more memory for less collisions by increasing Nbits
-	
+		char Nbits=tmp; // THIS CAN BE CHANGED! more memory for less collisions by increasing Nbits
+		
+		gettimeofday(&timecheck,NULL);
+		tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+		printf("\t%ld ms",(tend-tstart));
+		tstart=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+
 		// divide them up into groups for each thread
 	
 		pthread_t threads[nThreads];
@@ -1301,7 +1401,7 @@ void analyze(struct METHOD* method, int quantity) {
 			args->end=(i+1)*quantity/nThreads;
 			args->states=states;
 			args->step=step;
-			args->Nbits=Nbits;
+			args->Nbits=step->Nbits;
 			pthread_create(&threads[i], NULL, parallelAnalyze,(void *)args);
 			//free(args);
 		}
@@ -1309,24 +1409,67 @@ void analyze(struct METHOD* method, int quantity) {
 		for (int i=0; i<(nThreads); i++) {
 			pthread_join(threads[i],NULL);
 		}
+	
+		gettimeofday(&timecheck,NULL);
+		tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+		printf("\t%ld ms",(tend-tstart));
+		tstart=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
 
-
+		int min=99;
+		int max=0;
+		int sum=0;
+		int movecount=0;
 
 		for (int i=0;i<quantity;i++) {
-			printf("\n%d: %s..%s",i,readableSequence(states[i]->solution->sol1),readableSequence(states[i]->solution->sol2));
+			struct solution* sol=states[i]->solution;
+			while (sol->next!=NULL){
+				sol=sol->next;
+			}
+			applySequence(sol->sol1,states[i]->cube);
+			applySequence(sol->sol2,states[i]->cube);
+	
+		//	printf("\n%s - %s",readableSequence(sol->sol1),readableSequence(sol->sol2));
+
+		//	printCube(states[i]->cube);
+		
+			movecount=countMoves(&sol->sol1)+countMoves(&sol->sol2);
+			if (movecount>max)
+					max=movecount;
+			if (movecount<min)
+					min=movecount;
+			sum+=movecount;
+			step->hist->table[movecount]=step->hist->table[movecount]+1;
 		}
 
-		// ADD SOMETHING TO UPDATE THE STATES[i]->CUBE with new data
+		step->min=min;
+		step->max=max;
+		step->mean=((float)sum)/quantity;
+		
+		step=step->next;
 
+		gettimeofday(&timecheck,NULL);
+		tend=(long)timecheck.tv_sec*1000+(long)timecheck.tv_usec/1000;
+		printf("\t%ld ms",(tend-tstart));
+	}
 
+	printf("\n\n\tSTEP\tMIN\tMEAN\tMAX");
+	printf("\n\t----------------------------");
+	step=method->first;
+	// loop over steps to print results
+	while (step!=NULL){
+		printf("\n\t%s\t%d\t%3.4f\t%d",step->name,step->min,step->mean,step->max);	
 		step=step->next;
 	}
 
+	printf("\n\n\t%d solutions found.\n",quantity);
 
-	printf("made it\n");
-
+	step=method->first;
+	// loop over steps to print results
+	while (step!=NULL){
+		plotHistogram(step);
+		step=step->next;
+	}
 }
-
 
 int runBenchmark(long quantity, char move) {
 	struct CUBE cube;
@@ -1366,7 +1509,7 @@ void benchmarkRandomize() {
 
 void benchmarkHashTable(char movegroup, char depth) {
 	clock_t start=clock();
-	createTable(movegroup,depth,0xffffffffffffffff,0xffffffffffffffff);
+	createTable(movegroup,depth,0xffffffffffffffff,0xffffffffffffffff,NULL);
 	clock_t end=clock();
 	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
 	printf("%f seconds\n",time_used);

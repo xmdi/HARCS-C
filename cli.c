@@ -27,7 +27,7 @@ printf(	"  ,ggg,        gg            ,ggg,   ,ggggggggggg,        ,gggg,       
 }
 
 void info() {
-	printf("\n\tHARCS v2.0pre : 04-03-2021 : Matt DiPalma : USA\n\n");
+	printf("\n\tHARCS v2.0pre : 04-26-2021 : Matt DiPalma : USA\n\n");
 }
 
 void cursor() {
@@ -70,6 +70,7 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		int quantity=atoi(buffer);
 		if (quantity){
 			analyze(method,quantity);
+			isAnalyze=0;
 		}
 		else{
 			printf("\n\tInvalid quantity for analyze.\n");
@@ -109,8 +110,8 @@ else if (strcmp(buffer,"petrus")==0){
 		struct STEP *sF2L=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
 		initMethod(method,"Petrus",s3x2x2); 
 		initStep(s3x2x2,"3x2x2",1,6,6,0x0000f00ff0ff00c3,0x00003c03c030f3ff,sEO);
-		initStep(sEO,"EO",1,5,5,0x0000f00ff0ff00c3,0x00003c03ffffffff,sF2L);
-		initStep(sF2L,"F2L",1,5,5,0x0000ffffffff00ff,0x00003fffffffffff,NULL);
+		initStep(sEO,"EO",2,6,3,0x0000f00ff0ff00c3,0x00003c03ffffffff,sF2L);
+		initStep(sF2L,"F2L",3,7,6,0x0000ffffffff00ff,0x00003fffffffffff,NULL);
 	}
 	else if (strcmp(buffer,"solve")==0){	
 		struct STEP *step=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
