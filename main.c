@@ -1555,7 +1555,12 @@ bool parseInputFile(char * file, struct METHOD * method){
 				isAll=1;
 			}
 			else if (isAll){
-			
+	
+				if (strcmp(v,"endall")==0){
+					isAll=0;
+					break;
+				}		
+				
 				struct STEP *stepIterator=stepList;
 				while (strcmp(stepIterator->name,v)){
 					stepIterator=stepIterator->listnext;
