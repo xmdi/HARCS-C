@@ -1,0 +1,34 @@
+step 3x2x2
+movegroup 1
+tabledepth 6
+searchdepth 6
+comask 0b0000000011000011
+cpmask 0x0000f00f
+eomask 0b000000001100001111001111
+epmask 0x0000f00ff0ff
+cnmask 63
+endstep
+
+step EO
+movegroup 2
+tabledepth 6
+searchdepth 3
+comask 0b0000000011000011
+cpmask 0x0000f00f
+eomask 0b111111111111111111111111
+epmask 0x0000f00ff0ff
+cnmask 63
+endstep
+
+step F2L 
+movegroup 3
+tabledepth 7
+searchdepth 6
+comask 0b0000000011111111
+cpmask 0x0000ffff
+eomask 0b111111111111111111111111
+epmask 0x0000ffffffff
+cnmask 63
+endstep
+
+all 3x2x2 EO F2L endall

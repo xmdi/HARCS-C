@@ -102,7 +102,6 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		}
 	else if (strcmp(buffer,"debug")==0){
 
-
 	}
 else if (strcmp(buffer,"petrus")==0){	
 		struct STEP *s3x2x2=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
@@ -131,6 +130,12 @@ else if (strcmp(buffer,"petrus")==0){
 				step=step->next;
 			}
 			printCube(basecube);
+	}
+	else if (parseInputFile(buffer,method)){
+		char methodName[1024];
+		memcpy(methodName,buffer,strlen(buffer)-5);
+		methodName[strlen(buffer)-6]='\0';
+		printf("\n\t%s loaded.\n",methodName);
 	}
 	else
 		printf("\n\tCommand not recognized.\n");

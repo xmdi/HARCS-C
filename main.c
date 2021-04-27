@@ -43,6 +43,7 @@ struct STEP {
 	float mean;	
 	struct histogram *hist;
 	struct STEP *next;
+	struct STEP *listnext;
 };
 
 struct histogram {
@@ -1141,13 +1142,6 @@ void *parallelSearch(void *args) {
 		out=htRetrieve(pArgs->step->table,key,&cube0.EPCO,&cube0.CPEOCN);
 		if (out)
 		{
-			// we dont need sol1 and sol2 in this function btw
-		/*	char *sol1=readableSequence(reverseSequence(*out));
-			char *sol2=readableSequence(pArgs->candidates[i]);
-			printf("%s --- %s\n",sol2,sol1);
-			free(sol1);
-			free(sol2);
-			*/
 			insertSolution(solutions,pArgs->candidates[i],reverseSequence(*out));
 			quantity++;
 		}
@@ -1173,11 +1167,6 @@ void solveStep(struct STEP* step, struct CUBE* cube0, int quantity) {
 	cubecopy->EPCO=cube0->EPCO;
 	cubecopy->CPEOCN=cube0->CPEOCN;
 
-
-	//struct CUBE *cube0=(struct CUBE*)malloc(sizeof(struct CUBE));
-	//revertCube(cube0);
-	//applyMask(cube0,step->EPCOmask,step->CPEOCNmask);
-
 	applyMaskScrambled(cubecopy,step->EPCOmask,step->CPEOCNmask);
 
 	// generate candidate move sequences
@@ -1195,14 +1184,6 @@ void solveStep(struct STEP* step, struct CUBE* cube0, int quantity) {
 	}
 	
 	candidates=(uint64_t*)realloc(candidates,c*sizeof(uint64_t));
-/*
-	printf("C = %d\n\n",c);
-	for (int i=1;i<c;i++) {
-		binaryOut(candidates[i]);
-		printf("%s\n\n\n",readableSequence(candidates[i]));
-	}
-		getchar();
-*/
 
 	unsigned char tmp=0;
 	while (power(2,tmp)<=c) {
@@ -1223,8 +1204,6 @@ void solveStep(struct STEP* step, struct CUBE* cube0, int quantity) {
 		args->Nbits=step->Nbits;
 		//args->moves=moves;
 		pthread_create(&threads[i], NULL, parallelSearch,(void *)args);
-	//	printf("%u, %u",i*c/nThreads,(i+1)*c/nThreads);
-
 		//free(args);
 	}
 	
@@ -1271,18 +1250,9 @@ void *parallelAnalyze(void *args) {
 			cube1.EPCO=cube0.EPCO;
 			cube1.CPEOCN=cube0.CPEOCN;
 			applySequence(pArgs->candidates[j], &cube1);
-	/*		if (strcmp(pArgs->step->name,"3x2x2")==0){
-				printf("looking:\n");
-				printf(" applying: %s\n",readableSequence(pArgs->candidates[j]));
-				printCube(&cube1);
-				getchar();
-			}
-*/
 			unsigned int key=hash(pArgs->Nbits,&cube1);
 			out=htRetrieve(pArgs->step->table,key,&cube1.EPCO,&cube1.CPEOCN);
 			if (out) { // solution found
-				//	struct solution* solutions=NULL;
-				//	solutions=(struct solution*)malloc(sizeof(struct solution));
 				struct solution* solutions=(struct solution*)calloc(1,sizeof(struct solution));
 				insertSolution(solutions,pArgs->candidates[j],reverseSequence(*out)); // can get rid of this and put it in the following 2
 				pArgs->states[i]->solution->sol1=solutions->sol1;
@@ -1513,4 +1483,108 @@ void benchmarkHashTable(char movegroup, char depth) {
 	clock_t end=clock();
 	double time_used=((double) (end-start))/CLOCKS_PER_SEC;
 	printf("%f seconds\n",time_used);
+}
+
+uint64_t parseNumber(char * word){
+	if ((strncmp(word,"0x",2)==0)){
+		return (uint64_t) strtol(word+2,NULL,16);
+	}	
+	else if ((strncmp(word,"0b",2)==0)){
+		return (uint64_t) strtol(word+2,NULL,2);
+	}	
+	else {
+		return (uint64_t) strtol(word,NULL,10);
+	}	
+}
+
+bool parseInputFile(char * file, struct METHOD * method){
+	FILE* f;
+	if ((f=fopen(file,"r"))){
+		char v[1024];
+		char w[1024];
+		char methodName[1024];
+		memcpy(methodName,file,strlen(file)-5);
+		methodName[strlen(file)-6]='\0';
+		bool firstStep=1;
+		bool isAll=0;
+		struct STEP *tempStep=(struct STEP*)calloc(1,sizeof(struct STEP));
+		struct STEP *stepList=(struct STEP*)calloc(1,sizeof(struct STEP));
+		while (fscanf(f,"%1023s",v)==1){
+	//		printf("\n%s %s\n",v,w);
+			if (strcmp(w,"step")==0){
+				memset(tempStep,0,sizeof(struct STEP));
+				strcpy(tempStep->name,v);
+			}		
+			if (strcmp(w,"movegroup")==0){
+				tempStep->movegroup=parseNumber(v);
+			}		
+			if (strcmp(w,"tabledepth")==0){
+				tempStep->tableDepth=parseNumber(v);
+			}
+			if (strcmp(w,"searchdepth")==0){
+				tempStep->searchDepth=parseNumber(v);
+			}	
+			if (strcmp(w,"comask")==0){
+				tempStep->EPCOmask=tempStep->EPCOmask|(parseNumber(v));
+			}
+			if (strcmp(w,"cpmask")==0){
+				tempStep->CPEOCNmask=tempStep->CPEOCNmask|(parseNumber(v)<<30);
+			}		
+			if (strcmp(w,"eomask")==0){
+				tempStep->CPEOCNmask=tempStep->CPEOCNmask|(parseNumber(v)<<6);
+			}
+			if (strcmp(w,"epmask")==0){
+				tempStep->EPCOmask|=(parseNumber(v)<<16);
+			}		
+			if (strcmp(w,"cnmask")==0){
+				tempStep->CPEOCNmask=tempStep->CPEOCNmask|(parseNumber(v));
+			}		
+			if (strcmp(v,"endstep")==0){
+				
+				struct STEP *step=(struct STEP*)calloc(1,sizeof(struct STEP));
+				initStep(step,tempStep->name,tempStep->movegroup,tempStep->tableDepth,tempStep->searchDepth,tempStep->EPCOmask,tempStep->CPEOCNmask,NULL);
+
+				struct STEP *stepIterator=stepList;
+				while (stepIterator->listnext!=NULL){
+					stepIterator=stepIterator->listnext;
+				}
+				stepIterator->listnext=step;
+
+			}		
+			if (strcmp(v,"all")==0){
+				isAll=1;
+			}
+			else if (isAll){
+			
+				struct STEP *stepIterator=stepList;
+				while (strcmp(stepIterator->name,v)){
+					stepIterator=stepIterator->listnext;
+				}
+			
+				if (firstStep){
+					initMethod(method,methodName,stepIterator);
+					firstStep=0;
+				}
+				else{
+		
+					struct STEP *stepIteratorOld=stepList;
+					while (strcmp(stepIteratorOld->name,w)){
+						stepIteratorOld=stepIteratorOld->listnext;
+					}
+					stepIteratorOld->next=stepIterator;
+				}
+
+				if (strcmp(v,"endall")==0){
+					isAll=0;
+				}
+			}
+
+			strcpy(w,v);
+		}		
+		fclose(f);
+		return 1;
+	}
+	else {
+		return 0;
+	}
 }
