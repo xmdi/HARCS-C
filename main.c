@@ -11,8 +11,9 @@ typedef enum {false, true} bool;
 
 unsigned char cw[]={0,2,3,1};
 unsigned char acw[]={0,3,1,2};
+bool eoEslice[13] = {0,0,0,0,0,1,1,1,1,0,0,0,0};
 
-char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
+char* moveList[27]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'","E","E2","E'","M","M2","M'","S","S2","S'"};
 
 struct CUBE {
 	uint64_t EPCO,CPEOCN;
@@ -91,6 +92,23 @@ struct parallelAnalyzeArgs {
 	int start;
 	int end;
 };
+
+char centers[2][7][7]={{{0,0,0,0,0,0,0},
+						{0,0,3,5,0,6,2},
+						{0,6,0,1,3,0,4},
+						{0,2,4,0,5,1,0},
+						{0,0,6,2,0,3,5},
+						{0,3,0,4,6,0,1},
+						{0,5,1,0,2,4,0}},
+					   {{0,0,0,0,0,0,0},
+						{0,0,6,2,0,3,5},
+						{0,3,0,4,6,0,1},
+						{0,5,1,0,2,4,0},
+						{0,0,3,5,0,6,2},
+						{0,6,0,1,3,0,4},
+						{0,2,4,0,5,1,0}}};
+
+char centersWrap[7]={0,4,5,6,1,2,3};
 
 int gettimeofday(struct timeval *restrict tp, void *restrict tzp);
 
@@ -587,6 +605,62 @@ void applyMove(struct CUBE* cube, char move) {
 				((((0x1UL<<18)&cube->CPEOCN)<<1)^((0x3UL<<18)&cube->CPEOCN))>>6|
 				(0x003fc03fcfc3cfff&cube->CPEOCN);
 			break;
+		case 19: // E
+			cube->CPEOCN=((((0x1UL<<28)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN)|
+				((((0x1UL<<26)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN)|
+				((((0x1UL<<24)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN)|
+				((((0x1UL<<22)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN)|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))>>6|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))<<2|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))<<2|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))<<2|
+				((((0x1UL<<12)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN)|
+				((((0x1UL<<10)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
+				((((0x1UL<<8)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN)|
+				((((0x1UL<<6)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
+				(0b111&centers[0][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])|
+				(0x3fffffffc0000038&cube->CPEOCN);
+			cube->EPCO=(((0xfUL<<44)&cube->EPCO)>>12)|
+				(((0xfUL<<40)&cube->EPCO)<<4)|
+				(((0xfUL<<36)&cube->EPCO)<<4)|
+				(((0xfUL<<32)&cube->EPCO)<<4)|
+				(0xffff0000ffffffff&cube->EPCO);
+			break;
+		case 20: // E2
+			cube->CPEOCN=
+				((0x3UL<<20)&cube->CPEOCN)>>4|
+				((0x3UL<<18)&cube->CPEOCN)>>4|
+				((0x3UL<<16)&cube->CPEOCN)<<4|
+				((0x3UL<<14)&cube->CPEOCN)<<4|
+				(0b111&centersWrap[0b111&cube->CPEOCN])|
+				(0x3fffffffffc03ff8&cube->CPEOCN);
+			cube->EPCO=(((0xfUL<<44)&cube->EPCO)>>8)|
+				(((0xfUL<<40)&cube->EPCO)>>8)|
+				(((0xfUL<<36)&cube->EPCO)<<8)|
+				(((0xfUL<<32)&cube->EPCO)<<8)|
+				(0xffff0000ffffffff&cube->EPCO);
+			break;
+		case 21: // E'
+			cube->CPEOCN=((((0x1UL<<28)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN)|
+				((((0x1UL<<26)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN)|
+				((((0x1UL<<24)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN)|
+				((((0x1UL<<22)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN)|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))>>2|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))>>2|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))>>2|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))<<6|
+				((((0x1UL<<12)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN)|
+				((((0x1UL<<10)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
+				((((0x1UL<<8)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN)|
+				((((0x1UL<<6)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
+				(0b111&centers[1][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])|
+				(0x3fffffffc0000038&cube->CPEOCN);
+			cube->EPCO=(((0xfUL<<44)&cube->EPCO)>>4)|
+				(((0xfUL<<40)&cube->EPCO)>>4)|
+				(((0xfUL<<36)&cube->EPCO)>>4)|
+				(((0xfUL<<32)&cube->EPCO)<<12)|
+				(0xffff0000ffffffff&cube->EPCO);
+			break;
 	}
 }
 
@@ -675,7 +749,7 @@ void applyMoves(struct MOVES* moves, struct CUBE* cube) {
 
 	char* buffer=strtok(tmp," ");
 	while (buffer!=NULL){
-		for (int i=0; i<18; i++){
+		for (int i=0; i<27; i++){
 			if (strcmp(buffer,moveList[i])==0){
 				applyMove(cube,i+1);
 			}

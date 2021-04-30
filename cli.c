@@ -5,7 +5,6 @@
 
 bool isMove=0;
 bool isAnalyze=0;
-//char* moveList[18]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'"};
 
 void clear() {
 	for (int i=0; i<100; i++)
@@ -51,7 +50,7 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		benchmarkRandomize();
 	}
 	else if (isMove){
-		for (int i=0; i<18; i++){
+		for (int i=0; i<27; i++){
 			if (strcmp(buffer,moveList[i])==0){
 				applyMove(basecube,i+1);
 				char new[999];
