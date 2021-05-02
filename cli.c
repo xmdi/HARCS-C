@@ -26,7 +26,7 @@ printf(	"  ,ggg,        gg            ,ggg,   ,ggggggggggg,        ,gggg,       
 }
 
 void info() {
-	printf("\n\tHARCS v2.0pre : 04-26-2021 : Matt DiPalma : USA\n\n");
+	printf("\n\tHARCS v2.0pre : 05-01-2021 : Matt DiPalma : USA\n\n");
 }
 
 void cursor() {
@@ -50,7 +50,7 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		benchmarkRandomize();
 	}
 	else if (isMove){
-		for (int i=0; i<27; i++){
+		for (int i=0; i<54; i++){
 			if (strcmp(buffer,moveList[i])==0){
 				applyMove(basecube,i+1);
 				char new[999];

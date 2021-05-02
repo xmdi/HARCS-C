@@ -15,7 +15,15 @@ unsigned char acw[]={0,3,1,2};
 bool eoEslice[13] = {0,0,0,0,0,1,1,1,1,0,0,0,0};
 bool eoMslice[13] = {0,1,0,1,0,0,0,0,0,1,0,1,0};
 
-char* moveList[27]={"U","U2","U'","D","D2","D'","R","R2","R'","L","L2","L'","F","F2","F'","B","B2","B'","E","E2","E'","M","M2","M'","S","S2","S'"};
+char* moveList[54]={"U","U2","U'","D","D2","D'",
+					"R","R2","R'","L","L2","L'",
+					"F","F2","F'","B","B2","B'",
+					"E","E2","E'","M","M2","M'",
+					"S","S2","S'","u","u2","u'",
+					"d","d2","d'","r","r2","r'",
+					"l","l2","l'","f","f2","f'",
+					"b","b2","b'","y","y2","y'",
+					"x","x2","x'","z","z2","z'"};
 
 struct CUBE {
 	uint64_t EPCO,CPEOCN;
@@ -676,7 +684,7 @@ void applyMove(struct CUBE* cube, char move) {
 				((((0x1UL<<10)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
 				(((((0x1UL<<8)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))<<4|
 				((((0x1UL<<6)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
-				(0b111&centers[0][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
+				(0b111&centers[1][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
 				(0x3fffffffc0000007&cube->CPEOCN);
 			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>8)|
 				(((0xfUL<<52)&cube->EPCO)>>32)|
@@ -711,7 +719,7 @@ void applyMove(struct CUBE* cube, char move) {
 				((((0x1UL<<10)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
 				(((((0x1UL<<8)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))<<16|
 				((((0x1UL<<6)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
-				(0b111&centers[1][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
+				(0b111&centers[0][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
 				(0x3fffffffc0000007&cube->CPEOCN);
 			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>32)|
 				(((0xfUL<<52)&cube->EPCO)<<8)|
@@ -780,13 +788,488 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<16)&cube->EPCO)<<8)|
 				(0xf0f0fffff0f0ffff&cube->EPCO);
 			break;
-	}
+		case 28: // u
+			cube->CPEOCN=
+				(((0xfUL<<46)&cube->CPEOCN)<<12)|
+				(((0xfffUL<<50)&cube->CPEOCN)>>4)|
+				(((((0x1UL<<28)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN))>>2|
+				(((((0x1UL<<26)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN))>>2|
+				(((((0x1UL<<24)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN))>>2|
+				(((((0x1UL<<22)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN))<<6|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))>>2|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))>>2|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))>>2|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))<<6|
+				((((0x1UL<<12)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN)|
+				((((0x1UL<<10)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
+				((((0x1UL<<8)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN)|
+				((((0x1UL<<6)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
+				(0b111&centers[1][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])|
+				(0x00003fffc0000038&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfUL<<48)&cube->EPCO)<<12)|
+				(((0xfffUL<<52)&cube->EPCO)>>4)|
+				(((0x3UL<<8)&cube->EPCO)<<6)|
+				(((0xfcUL<<8)&cube->EPCO)>>2)|
+				(((0xfUL<<44)&cube->EPCO)>>4)|
+				(((0xfUL<<40)&cube->EPCO)>>4)|
+				(((0xfUL<<36)&cube->EPCO)>>4)|
+				(((0xfUL<<32)&cube->EPCO)<<12)|
+				(0x00000000ffff00ff&cube->EPCO);
+			break;
+		case 29: // u2
+			cube->CPEOCN=
+				(((0xffUL<<46)&cube->CPEOCN)<<8)|
+				(((0xffUL<<54)&cube->CPEOCN)>>8)|
+				(((0xful<<22)&cube->CPEOCN)<<4)|
+				(((0xful<<26)&cube->CPEOCN)>>4)|
+				((0x3UL<<20)&cube->CPEOCN)>>4|
+				((0x3UL<<18)&cube->CPEOCN)>>4|
+				((0x3UL<<16)&cube->CPEOCN)<<4|
+				((0x3UL<<14)&cube->CPEOCN)<<4|
+				(0b111&centersWrap[0b111&cube->CPEOCN])|
+				(0x3fffffffc0003ff8&cube->CPEOCN);
+			cube->EPCO=
+				(((0xffUL<<48)&cube->EPCO)<<8)|
+				(((0xffUL<<56)&cube->EPCO)>>8)|
+				(((0xfUL<<8)&cube->EPCO)<<4)|
+				(((0xfUL<<12)&cube->EPCO)>>4)|
+				(((0xfUL<<44)&cube->EPCO)>>8)|
+				(((0xfUL<<40)&cube->EPCO)>>8)|
+				(((0xfUL<<36)&cube->EPCO)<<8)|
+				(((0xfUL<<32)&cube->EPCO)<<8)|
+				(0x00000000ffff00ff&cube->EPCO);
+			break;
+		case 30: // u'
+			cube->CPEOCN=
+				(((0xfffUL<<46)&cube->CPEOCN)<<4)|
+				(((0xfUL<<58)&cube->CPEOCN)>>12)|
+				(((((0x1UL<<28)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN))>>6|
+				(((((0x1UL<<26)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN))<<2|
+				(((((0x1UL<<24)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN))<<2|
+				(((((0x1UL<<22)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN))<<2|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))>>6|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))<<2|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))<<2|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))<<2|
+				((((0x1UL<<12)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN)|
+				((((0x1UL<<10)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
+				((((0x1UL<<8)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN)|
+				((((0x1UL<<6)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
+				(0b111&centers[0][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])|
+				(0x00003fffc0000038&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfffUL<<48)&cube->EPCO)<<4)|
+				(((0xfUL<<60)&cube->EPCO)>>12)|
+				(((0x3fUL<<8)&cube->EPCO)<<2)|
+				(((0xcUL<<12)&cube->EPCO)>>6)|
+				(((0xfUL<<44)&cube->EPCO)>>12)|
+				(((0xfUL<<40)&cube->EPCO)<<4)|
+				(((0xfUL<<36)&cube->EPCO)<<4)|
+				(((0xfUL<<32)&cube->EPCO)<<4)|
+				(0x00000000ffff00ff&cube->EPCO);
+			break;
+		case 31: // d
+			cube->CPEOCN=
+				(((0xfffUL<<30)&cube->CPEOCN)<<4)|
+				(((0xfUL<<42)&cube->CPEOCN)>>12)|
+				((((0x1UL<<28)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN)|
+				((((0x1UL<<26)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN)|
+				((((0x1UL<<24)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN)|
+				((((0x1UL<<22)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN)|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))>>6|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))<<2|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))<<2|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))<<2|
+				(((((0x1UL<<12)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN))>>6|
+				(((((0x1UL<<10)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN))<<2|
+				(((((0x1UL<<8)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))<<2|
+				(((((0x1UL<<6)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN))<<2|
+				(0b111&centers[0][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])|
+				(0x3fffc00000000038&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfffUL<<16)&cube->EPCO)<<4)|
+				(((0xfUL<<28)&cube->EPCO)>>12)|
+				(((0x3fUL)&cube->EPCO)<<2)|
+				(((0xcUL<<4)&cube->EPCO)>>6)|
+				(((0xfUL<<44)&cube->EPCO)>>12)|
+				(((0xfUL<<40)&cube->EPCO)<<4)|
+				(((0xfUL<<36)&cube->EPCO)<<4)|
+				(((0xfUL<<32)&cube->EPCO)<<4)|
+				(0xffff00000000ff00&cube->EPCO);
+			break;
+		case 32: // d2
+			cube->CPEOCN=
+				(((0xffUL<<30)&cube->CPEOCN)<<8)|
+				(((0xffUL<<38)&cube->CPEOCN)>>8)|
+				(((0xfUL<<6)&cube->CPEOCN)<<4)|
+				(((0xfUL<<10)&cube->CPEOCN)>>4)|
+				((0x3UL<<20)&cube->CPEOCN)>>4|
+				((0x3UL<<18)&cube->CPEOCN)>>4|
+				((0x3UL<<16)&cube->CPEOCN)<<4|
+				((0x3UL<<14)&cube->CPEOCN)<<4|
+				(0b111&centersWrap[0b111&cube->CPEOCN])|
+				(0x3fffc0003fc00038&cube->CPEOCN);
+			cube->EPCO=
+				(((0xffUL<<16)&cube->EPCO)<<8)|
+				(((0xffUL<<24)&cube->EPCO)>>8)|
+				(((0xfUL)&cube->EPCO)<<4)|
+				(((0xfUL<<4)&cube->EPCO)>>4)|
+				(((0xfUL<<44)&cube->EPCO)>>8)|
+				(((0xfUL<<40)&cube->EPCO)>>8)|
+				(((0xfUL<<36)&cube->EPCO)<<8)|
+				(((0xfUL<<32)&cube->EPCO)<<8)|
+				(0xffff00000000ff00&cube->EPCO);
+			break;
+		case 33: // d'
+			cube->CPEOCN=
+				(((0xfUL<<30)&cube->CPEOCN)<<12)|
+				(((0xfffUL<<34)&cube->CPEOCN)>>4)|
+				((((0x1UL<<28)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN)|
+				((((0x1UL<<26)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN)|
+				((((0x1UL<<24)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN)|
+				((((0x1UL<<22)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN)|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))>>2|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))>>2|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))>>2|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*!eoEslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))<<6|
+				(((((0x1UL<<12)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN))>>2|
+				(((((0x1UL<<10)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN))>>2|
+				(((((0x1UL<<8)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))>>2|
+				(((((0x1UL<<6)&cube->CPEOCN)>0)*eoEslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN))<<6|
+				(0b111&centers[1][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])|
+				(0x3fffc00000000038&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfUL<<16)&cube->EPCO)<<12)|
+				(((0xfffUL<<20)&cube->EPCO)>>4)|
+				(((0x3UL)&cube->EPCO)<<6)|
+				(((0xfcUL)&cube->EPCO)>>2)|
+				(((0xfUL<<44)&cube->EPCO)>>4)|
+				(((0xfUL<<40)&cube->EPCO)>>4)|
+				(((0xfUL<<36)&cube->EPCO)>>4)|
+				(((0xfUL<<32)&cube->EPCO)<<12)|
+				(0xffff00000000ff00&cube->EPCO);
+			break;
+		case 34: // r
+			cube->CPEOCN=
+				(((0xfUL<<50)&cube->CPEOCN)<<4)|
+				(((0xfUL<<54)&cube->CPEOCN)>>16)|
+				(((0xfUL<<38)&cube->CPEOCN)>>4)|
+				(((0xfUL<<34)&cube->CPEOCN)<<16)|
+				(((((0x1UL<<28)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN))>>16|
+				(((((0x1UL<<26)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN))>>8|
+				(((((0x1UL<<24)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN))<<4|
+				((((0x1UL<<22)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN)|
+				((((0x1UL<<20)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN)|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))>>8|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))<<10|
+				((((0x1UL<<14)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN)|
+				(((((0x1UL<<12)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN))>>4|
+				(((((0x1UL<<10)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN))<<6|
+				(((((0x1UL<<8)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))<<16|
+				((((0x1UL<<6)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
+				(0b111&centers[0][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
+				(0x3c03fc03c0000007&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfUL<<36)&cube->EPCO)<<20)|
+				(((0xfUL<<56)&cube->EPCO)>>16)|
+				(((0xfUL<<40)&cube->EPCO)>>16)|
+				(((0XfUL<<24)&cube->EPCO)<<12)|
+				((cw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<12|
+				((acw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<4|
+				((cw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<2|
+				((acw[(((0x3UL<<2)&cube->EPCO)>>2)]))<<10|
+				(((0xfUL<<60)&cube->EPCO)>>32)|
+				(((0xfUL<<52)&cube->EPCO)<<8)|
+				(((0xfUL<<28)&cube->EPCO)>>8)|
+				(((0xfUL<<20)&cube->EPCO)<<32)|
+				(0x000ff00f000fc3c3&cube->EPCO);
+			break;	
+		case 35: // r2
+			cube->CPEOCN=
+				(((0xfUL<<50)&cube->CPEOCN)>>12)|
+				(((0xfUL<<54)&cube->CPEOCN)>>20)|
+				(((0xfUL<<38)&cube->CPEOCN)<<12)|
+				(((0xfUL<<34)&cube->CPEOCN)<<20)|
+				(((0x3UL<<16)&cube->CPEOCN)<<2)|
+				(((0x3UL<<26)&cube->CPEOCN)>>16)|
+				(((0x3UL<<18)&cube->CPEOCN)>>2)|
+				(((0x3UL<<10)&cube->CPEOCN)<<16)|
+				((0x3UL<<28)&cube->CPEOCN)>>20|
+				((0x3UL<<24)&cube->CPEOCN)>>12|
+				((0x3UL<<12)&cube->CPEOCN)<<12|
+				((0x3UL<<8)&cube->CPEOCN)<<20|
+				(0b111&centersWrap[(0b111000&cube->CPEOCN)>>3])<<3|
+				(0x3c03fc03c0f0c0c7&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfUL<<36)&cube->EPCO)<<4)|
+				(((0xfUL<<56)&cube->EPCO)>>32)|
+				(((0xfUL<<40)&cube->EPCO)>>4)|
+				(((0XfUL<<24)&cube->EPCO)<<32)|
+				(((0x3UL<<10)&cube->EPCO)>>6)|
+				(((0x3UL<<12)&cube->EPCO)>>10)|
+				(((0x3UL<<4)&cube->EPCO)<<6)|
+				(((0x3UL<<2)&cube->EPCO)<<10)|
+				(((0xfUL<<60)&cube->EPCO)>>40)|
+				(((0xfUL<<52)&cube->EPCO)>>24)|
+				(((0xfUL<<28)&cube->EPCO)<<24)|
+				(((0xfUL<<20)&cube->EPCO)<<40)|
+				(0x000ff00f000fc3c3&cube->EPCO);
+			break;
+		case 36: // r'
+			cube->CPEOCN=
+				(((0xfUL<<50)&cube->CPEOCN)>>16)|
+				(((0xfUL<<54)&cube->CPEOCN)>>4)|
+				(((0xfUL<<38)&cube->CPEOCN)<<16)|
+				(((0xfUL<<34)&cube->CPEOCN)<<4)|
+				(((((0x1UL<<28)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN))>>4|
+				(((((0x1UL<<26)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN))>>10|
+				(((((0x1UL<<24)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN))>>16|
+				((((0x1UL<<22)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN)|
+				((((0x1UL<<20)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN)|
+				(((((0x1UL<<18)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN))<<8|
+				(((((0x1UL<<16)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN))>>6|
+				((((0x1UL<<14)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN)|
+				(((((0x1UL<<12)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN))<<16|
+				(((((0x1UL<<10)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN))<<8|
+				(((((0x1UL<<8)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))<<4|
+				((((0x1UL<<6)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN)|
+				(0b111&centers[1][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
+				(0x3c03fc03c0000007&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfUL<<36)&cube->EPCO)>>12)|
+				(((0xfUL<<56)&cube->EPCO)>>20)|
+				(((0xfUL<<40)&cube->EPCO)<<16)|
+				(((0XfUL<<24)&cube->EPCO)<<16)|
+				((cw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<2|
+				((acw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<10|
+				((cw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<12|
+				((acw[(((0x3UL<<2)&cube->EPCO)>>2)]))<<4|
+				(((0xfUL<<60)&cube->EPCO)>>8)|
+				(((0xfUL<<52)&cube->EPCO)>>32)|
+				(((0xfUL<<28)&cube->EPCO)<<32)|
+				(((0xfUL<<20)&cube->EPCO)<<8)|
+				(0x000ff00f000fc3c3&cube->EPCO);
+			break;
+		case 37: // l
+			cube->CPEOCN=
+				(((0xfUL<<58)&cube->CPEOCN)>>12)|
+				(((0xfUL<<46)&cube->CPEOCN)>>16)|
+				(((0xfUL<<30)&cube->CPEOCN)<<12)|
+				(((0xfUL<<42)&cube->CPEOCN)<<16)|
+				(((((0x1UL<<28)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN))>>4|
+				((((0x1UL<<26)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN)|
+				(((((0x1UL<<24)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN))>>16|
+				(((((0x1UL<<22)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN))>>8|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))<<2|
+				((((0x1UL<<18)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN)|
+				((((0x1UL<<16)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN)|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))>>8|
+				(((((0x1UL<<12)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN))<<16|
+				((((0x1UL<<10)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
+				(((((0x1UL<<8)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))<<4|
+				(((((0x1UL<<6)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN))<<14|
+				(0b111&centers[1][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
+				(0x03fc03fc00000007&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfUL<<48)&cube->EPCO)>>16)|
+				(((0xfUL<<32)&cube->EPCO)>>16)|
+				(((0xfUL<<16)&cube->EPCO)<<28)|
+				(((0XfUL<<44)&cube->EPCO)<<4)|
+				((cw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<8|
+				((acw[(((0x3UL<<8)&cube->EPCO)>>8)]))|
+				((cw[(((0x3UL)&cube->EPCO))]))<<6|
+				((acw[(((0x3UL<<6)&cube->EPCO)>>6)]))<<14|
+				(((0xfUL<<60)&cube->EPCO)>>8)|
+				(((0xfUL<<52)&cube->EPCO)>>32)|
+				(((0xfUL<<28)&cube->EPCO)<<32)|
+				(((0xfUL<<20)&cube->EPCO)<<8)|
+				(0x0f000ff00f003c3c&cube->EPCO);
+			break;
+		case 38: // l2
+			cube->CPEOCN=
+				(((0xfUL<<58)&cube->CPEOCN)>>28)|
+				(((0xfUL<<46)&cube->CPEOCN)>>4)|
+				(((0xfUL<<30)&cube->CPEOCN)<<28)|
+				(((0xfUL<<42)&cube->CPEOCN)<<4)|
+				(((0x3UL<<22)&cube->CPEOCN)>>16)|
+				(((0x3UL<<14)&cube->CPEOCN)<<6)|
+				(((0x3UL<<6)&cube->CPEOCN)<<16)|
+				(((0x3UL<<20)&cube->CPEOCN)>>6)|
+				((0x3UL<<28)&cube->CPEOCN)>>20|
+				((0x3UL<<24)&cube->CPEOCN)>>12|
+				((0x3UL<<12)&cube->CPEOCN)<<12|
+				((0x3UL<<8)&cube->CPEOCN)<<20|
+				(0b111&centersWrap[(0b111000&cube->CPEOCN)>>3])<<3|
+				(0x03fc03fc0c0f0c07&cube->CPEOCN);
+			cube->EPCO=(((0xfUL<<48)&cube->EPCO)>>32)|
+				(((0xfUL<<32)&cube->EPCO)<<12)|
+				(((0xfUL<<16)&cube->EPCO)<<32)|
+				(((0XfUL<<44)&cube->EPCO)>>12)|
+				(((0x3UL<<14)&cube->EPCO)>>14)|
+				(((0x3UL<<8)&cube->EPCO)>>2)|
+				(((0x3UL)&cube->EPCO)<<14)|
+				(((0x3UL<<6)&cube->EPCO)<<2)|
+				(((0xfUL<<60)&cube->EPCO)>>40)|
+				(((0xfUL<<52)&cube->EPCO)>>24)|
+				(((0xfUL<<28)&cube->EPCO)<<24)|
+				(((0xfUL<<20)&cube->EPCO)<<40)|
+				(0x0f000ff00f003c3c&cube->EPCO);
+			break;
+		case 39: // l'
+			cube->CPEOCN=
+				(((0xfUL<<58)&cube->CPEOCN)>>16)|
+				(((0xfUL<<46)&cube->CPEOCN)<<12)|
+				(((0xfUL<<30)&cube->CPEOCN)<<16)|
+				(((0xfUL<<42)&cube->CPEOCN)>>12)|
+				(((((0x1UL<<28)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>60)&0xf]<<29)^((0x3UL<<28)&cube->CPEOCN))>>16|
+				((((0x1UL<<26)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>56)&0xf]<<27)^((0x3UL<<26)&cube->CPEOCN)|
+				(((((0x1UL<<24)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>52)&0xf]<<25)^((0x3UL<<24)&cube->CPEOCN))<<4|
+				(((((0x1UL<<22)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>48)&0xf]<<23)^((0x3UL<<22)&cube->CPEOCN))>>2|
+				(((((0x1UL<<20)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>44)&0xf]<<21)^((0x3UL<<20)&cube->CPEOCN))>>14|
+				((((0x1UL<<18)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>40)&0xf]<<19)^((0x3UL<<18)&cube->CPEOCN)|
+				((((0x1UL<<16)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>36)&0xf]<<17)^((0x3UL<<16)&cube->CPEOCN)|
+				(((((0x1UL<<14)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>32)&0xf]<<15)^((0x3UL<<14)&cube->CPEOCN))<<8|
+				(((((0x1UL<<12)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>28)&0xf]<<13)^((0x3UL<<12)&cube->CPEOCN))>>4|
+				((((0x1UL<<10)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>24)&0xf]<<11)^((0x3UL<<10)&cube->CPEOCN)|
+				(((((0x1UL<<8)&cube->CPEOCN)>0)*!eoMslice[((cube->EPCO)>>20)&0xf]<<9)^((0x3UL<<8)&cube->CPEOCN))<<16|
+				(((((0x1UL<<6)&cube->CPEOCN)>0)*eoMslice[((cube->EPCO)>>16)&0xf]<<7)^((0x3UL<<6)&cube->CPEOCN))<<8|
+				(0b111&centers[0][(0b111000&cube->CPEOCN)>>3][(0b111&cube->CPEOCN)])<<3|
+				(0x03fc03fc00000007&cube->CPEOCN);
+			cube->EPCO=
+				(((0xfUL<<48)&cube->EPCO)>>4)|
+				(((0xfUL<<32)&cube->EPCO)<<16)|
+				(((0xfUL<<16)&cube->EPCO)<<16)|
+				(((0XfUL<<44)&cube->EPCO)>>28)|
+				((cw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<6|
+				((acw[(((0x3UL<<8)&cube->EPCO)>>8)]))<<14|
+				((cw[(((0x3UL)&cube->EPCO))]))<<8|
+				((acw[(((0x3UL<<6)&cube->EPCO)>>6)]))|
+				(((0xfUL<<60)&cube->EPCO)>>32)|
+				(((0xfUL<<52)&cube->EPCO)<<8)|
+				(((0xfUL<<28)&cube->EPCO)>>8)|
+				(((0xfUL<<20)&cube->EPCO)<<32)|
+				(0x0f000ff00f003c3c&cube->EPCO);
+			break;	
+		case 40: // f
+			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)<<4)|
+				(((0xfUL<<50)&cube->CPEOCN)>>16)|
+				(((0xfUL<<34)&cube->CPEOCN)>>4)|
+				(((0xfUL<<30)&cube->CPEOCN)<<16)|
+				((((0x1UL<<28)&cube->CPEOCN)<<1)^((0x3UL<<28)&cube->CPEOCN))|
+				((0x3UL<<26)&cube->CPEOCN)>>16|
+				((0x3UL<<24)&cube->CPEOCN)>>8|
+				((0x3UL<<22)&cube->CPEOCN)<<4|
+				((((0x1UL<<20)&cube->CPEOCN)<<1)^((0x3UL<<20)&cube->CPEOCN))|
+				((((0x1UL<<18)&cube->CPEOCN)<<1)^((0x3UL<<18)&cube->CPEOCN))|
+				((0x3UL<<16)&cube->CPEOCN)>>8|
+				((0x3UL<<14)&cube->CPEOCN)<<10|
+				((((0x1UL<<12)&cube->CPEOCN)<<1)^((0x3UL<<12)&cube->CPEOCN))|
+				((0x3UL<<10)&cube->CPEOCN)>>4|
+				((0x3UL<<8)&cube->CPEOCN)<<6|
+				((0x3UL<<6)&cube->CPEOCN)<<16|
+				(0b111&centersWrap[0b111&cube->CPEOCN])<<3|
+				(0b111000&cube->CPEOCN)>>3|
+				(0x3fc03fc000000000&cube->CPEOCN);
+			cube->EPCO=(((0xfUL<<52)&cube->EPCO)>>16)|
+				(((0xfUL<<36)&cube->EPCO)>>16)|
+				(((0xfUL<<20)&cube->EPCO)<<12)|
+				(((0XfUL<<32)&cube->EPCO)<<20)|
+				((cw[(((0x3UL<<8)&cube->EPCO)>>8)]))<<10|
+				((acw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<2|
+				((cw[(((0x3UL<<2)&cube->EPCO)>>2)]))|
+				((acw[(((0x3UL)&cube->EPCO))]))<<8|
+				(((0xfUL<<56)&cube->EPCO)>>32)|
+				(((0xfUL<<48)&cube->EPCO)<<8)|
+				(((0xfUL<<24)&cube->EPCO)>>8)|
+				(((0xfUL<<16)&cube->EPCO)<<32)|
+				(0xf000ff00f000f0f0&cube->EPCO);
+			break;
+		case 41: // f2
+			cube->CPEOCN=(((0xfUL<<46)&cube->CPEOCN)>>12)|
+				(((0xfUL<<50)&cube->CPEOCN)>>20)|
+				(((0xfUL<<34)&cube->CPEOCN)<<12)|
+				(((0xfUL<<30)&cube->CPEOCN)<<20)|
+				(((0x3UL<<24)&cube->CPEOCN))>>16|
+				(((0x3UL<<16)&cube->CPEOCN))>>2|
+				(((0x3UL<<8)&cube->CPEOCN))<<16|
+				(((0x3UL<<14)&cube->CPEOCN))<<2|
+				((0x3UL<<26)&cube->CPEOCN)>>20|
+				((0x3UL<<22)&cube->CPEOCN)>>12|
+				((0x3UL<<10)&cube->CPEOCN)<<12|
+				((0x3UL<<6)&cube->CPEOCN)<<20|
+				(0b111&centersWrap[(0b111000&cube->CPEOCN)>>3])<<3|
+				(0b111&centersWrap[0b111&cube->CPEOCN])|
+				(0x3fc03fc0303c3000&cube->CPEOCN);
+			cube->EPCO=(((0xfUL<<52)&cube->EPCO)>>32)|
+				(((0xfUL<<36)&cube->EPCO)>>4)|
+				(((0xfUL<<20)&cube->EPCO)<<32)|
+				(((0XfUL<<32)&cube->EPCO)<<4)|
+				(((0x3UL<<8)&cube->EPCO)>>6)|
+				(((0x3UL<<10)&cube->EPCO)>>10)|
+				(((0x3UL<<2)&cube->EPCO)<<6)|
+				(((0x3UL)&cube->EPCO)<<10)|
+				(((0xfUL<<56)&cube->EPCO)>>40)|
+				(((0xfUL<<48)&cube->EPCO)>>24)|
+				(((0xfUL<<24)&cube->EPCO)<<24)|
+				(((0xfUL<<16)&cube->EPCO)<<40)|
+				(0xf000ff00f000f0f0&cube->EPCO);
+			break;
+		case 42: // f'
+			cube->CPEOCN=
+				(((0xfUL<<46)&cube->CPEOCN)>>16)|
+				(((0xfUL<<50)&cube->CPEOCN)>>4)|
+				(((0xfUL<<34)&cube->CPEOCN)<<16)|
+				(((0xfUL<<30)&cube->CPEOCN)<<4)|
+				((((0x1UL<<28)&cube->CPEOCN)<<1)^((0x3UL<<28)&cube->CPEOCN))|
+				((0x3UL<<26)&cube->CPEOCN)>>4|
+				((0x3UL<<24)&cube->CPEOCN)>>10|
+				((0x3UL<<22)&cube->CPEOCN)>>16|
+				((((0x1UL<<20)&cube->CPEOCN)<<1)^((0x3UL<<20)&cube->CPEOCN))|
+				((((0x1UL<<18)&cube->CPEOCN)<<1)^((0x3UL<<18)&cube->CPEOCN))|
+				((0x3UL<<16)&cube->CPEOCN)<<8|
+				((0x3UL<<14)&cube->CPEOCN)>>6|
+				((((0x1UL<<12)&cube->CPEOCN)<<1)^((0x3UL<<12)&cube->CPEOCN))|
+				((0x3UL<<10)&cube->CPEOCN)<<16|
+				((0x3UL<<8)&cube->CPEOCN)<<8|
+				((0x3UL<<6)&cube->CPEOCN)<<4|
+				(0b111&centersWrap[(0b111000&cube->CPEOCN)>>3])|
+				(0b111&cube->CPEOCN)<<3|
+				(0x3fc03fc000000000&cube->CPEOCN);
+			cube->EPCO=(((0xfUL<<52)&cube->EPCO)>>20)|
+				(((0xfUL<<36)&cube->EPCO)<<16)|
+				(((0xfUL<<20)&cube->EPCO)<<16)|
+				(((0XfUL<<32)&cube->EPCO)>>12)|
+				((cw[(((0x3UL<<8)&cube->EPCO)>>8)]))|
+				((acw[(((0x3UL<<10)&cube->EPCO)>>10)]))<<8|
+				((cw[(((0x3UL<<2)&cube->EPCO)>>2)]))<<10|
+				((acw[(((0x3UL)&cube->EPCO))]))<<2|
+				(((0xfUL<<56)&cube->EPCO)>>8)|
+				(((0xfUL<<48)&cube->EPCO)>>32)|
+				(((0xfUL<<24)&cube->EPCO)<<32)|
+				(((0xfUL<<16)&cube->EPCO)<<8)|
+				(0xf000ff00f000f0f0&cube->EPCO);
+			break;
+	
+	//00 0000 1111 1111 0000 0000 1111 1111 0000 00 00 00 00 00 00 00 00 00 00 00 00 000 111
+
+	// f
+	//0011 1111 1100 0000 0011 1111 1100 0000 0000 0000 0000 0000 0000 0000 0000 0000
+	//0011 1111 1100 0000 0011 1111 1100 0000 0011 0000 0011 1100 0011 0000 0000 0000
+	
+
+
+
+	}	
 }
 
 char *readableSequence(uint64_t sequence) {
-	char *moves[18]={"U ","U2 ","U' ","D ","D2 ","D' ",
+	char *moves[33]={"U ","U2 ","U' ","D ","D2 ","D' ",
 		"R ","R2 ","R' ","L ","L2 ","L' ",
-		"F ","F2 ","F' ","B ","B2 ","B' "};
+		"F ","F2 ","F' ","B ","B2 ","B' ",
+		"E ","E2 ","E' ","M ","M2 ","M' ",
+		"S ","S2 ","S' ","u ","u2 ","u' ",
+		"d ","d2 ","d' "};
 	int place=0;
 	char *out=malloc(99);
 	for (int i=0; i<=10; i++) {
@@ -868,7 +1351,7 @@ void applyMoves(struct MOVES* moves, struct CUBE* cube) {
 
 	char* buffer=strtok(tmp," ");
 	while (buffer!=NULL){
-		for (int i=0; i<27; i++){
+		for (int i=0; i<54; i++){
 			if (strcmp(buffer,moveList[i])==0){
 				applyMove(cube,i+1);
 			}
