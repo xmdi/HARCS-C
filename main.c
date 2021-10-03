@@ -1250,26 +1250,126 @@ void applyMove(struct CUBE* cube, char move) {
 				(((0xfUL<<16)&cube->EPCO)<<8)|
 				(0xf000ff00f000f0f0&cube->EPCO);
 			break;
-	
-	//00 0000 1111 1111 0000 0000 1111 1111 0000 00 00 00 00 00 00 00 00 00 00 00 00 000 111
+		case 43: // b 
+			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>16)|
+				(((0xfUL<<44)&cube->EPCO)>>16)|
+				(((0xfUL<<28)&cube->EPCO)<<12)|
+				(((0XfUL<<40)&cube->EPCO)<<20)|
+				((acw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<6|
+				((cw[(((0x3UL<<6)&cube->EPCO)>>6)]))<<4|
+				((acw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<12|
+				((cw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<14|
+				(((0xfUL<<56)&cube->EPCO)>>8)|
+				(((0xfUL<<48)&cube->EPCO)>>32)|
+				(((0xfUL<<24)&cube->EPCO)<<32)|
+				(((0xfUL<<16)&cube->EPCO)<<8)|
+				(0x00f000ff00f00f0f&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>16)|
+				(((0xfUL<<42)&cube->CPEOCN)>>4)|
+				(((0xfUL<<38)&cube->CPEOCN)<<16)|
+				(((0xfUL<<54)&cube->CPEOCN)<<4)|
+				((0x3UL<<28)&cube->CPEOCN)>>8|
+				((0x3UL<<26)&cube->CPEOCN)>>4|
+				((((0x1UL<<24)&cube->CPEOCN)<<1)^((0x3UL<<24)&cube->CPEOCN))|
+				((0x3UL<<22)&cube->CPEOCN)>>16|
+				((0x3UL<<20)&cube->CPEOCN)>>8|
+				((0x3UL<<18)&cube->CPEOCN)<<10|
+				((((0x1UL<<16)&cube->CPEOCN)<<1)^((0x3UL<<16)&cube->CPEOCN))|
+				((((0x1UL<<14)&cube->CPEOCN)<<1)^((0x3UL<<14)&cube->CPEOCN))|
+				((0x3UL<<12)&cube->CPEOCN)<<6|
+				((0x3UL<<10)&cube->CPEOCN)<<16|
+				((((0x1UL<<8)&cube->CPEOCN)<<1)^((0x3UL<<8)&cube->CPEOCN))|
+				((0x3UL<<6)&cube->CPEOCN)<<4|
+				(0b111&centersWrap[(0b111000&cube->CPEOCN)>>3])|
+				(0b111&cube->CPEOCN)<<3|
+				(0x003fc03fc0000000&cube->CPEOCN);
+			break;
+		case 44: // b2 
+			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>32)|
+				(((0xfUL<<44)&cube->EPCO)>>4)|
+				(((0xfUL<<28)&cube->EPCO)<<32)|
+				(((0XfUL<<40)&cube->EPCO)<<4)|
+				(((0x3UL<<14)&cube->EPCO)>>10)|
+				(((0x3UL<<6)&cube->EPCO)<<6)|
+				(((0x3UL<<4)&cube->EPCO)<<10)|
+				(((0x3UL<<12)&cube->EPCO)>>6)|
+				(((0xfUL<<56)&cube->EPCO)>>40)|
+				(((0xfUL<<48)&cube->EPCO)>>24)|
+				(((0xfUL<<24)&cube->EPCO)<<24)|
+				(((0xfUL<<16)&cube->EPCO)<<40)|
+				(0x00f000ff00f00f0f&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>20)|
+				(((0xfUL<<42)&cube->CPEOCN)<<12)|
+				(((0xfUL<<38)&cube->CPEOCN)<<20)|
+				(((0xfUL<<54)&cube->CPEOCN)>>12)|
+				(((0x3UL<<28)&cube->CPEOCN))>>16|
+				(((0x3UL<<20)&cube->CPEOCN))>>2|
+				(((0x3UL<<12)&cube->CPEOCN))<<16|
+				(((0x3UL<<18)&cube->CPEOCN))<<2|
+				((0x3UL<<26)&cube->CPEOCN)>>20|
+				((0x3UL<<22)&cube->CPEOCN)>>12|
+				((0x3UL<<10)&cube->CPEOCN)<<12|
+				((0x3UL<<6)&cube->CPEOCN)<<20|
+				(0b111&centersWrap[(0b111000&cube->CPEOCN)>>3])<<3|
+				(0b111&centersWrap[0b111&cube->CPEOCN])|
+				(0x003fc03fc303c300&cube->CPEOCN);
+			break;
+		case 45: // b' 
+			cube->EPCO=(((0xfUL<<60)&cube->EPCO)>>20)|
+				(((0xfUL<<44)&cube->EPCO)<<16)|
+				(((0xfUL<<28)&cube->EPCO)<<16)|
+				(((0XfUL<<40)&cube->EPCO)>>12)|
+				((acw[(((0x3UL<<14)&cube->EPCO)>>14)]))<<12|
+				((cw[(((0x3UL<<6)&cube->EPCO)>>6)]))<<14|
+				((acw[(((0x3UL<<4)&cube->EPCO)>>4)]))<<6|
+				((cw[(((0x3UL<<12)&cube->EPCO)>>12)]))<<4|
+				(((0xfUL<<56)&cube->EPCO)>>32)|
+				(((0xfUL<<48)&cube->EPCO)<<8)|
+				(((0xfUL<<24)&cube->EPCO)>>8)|
+				(((0xfUL<<16)&cube->EPCO)<<32)|
+				(0x00f000ff00f00f0f&cube->EPCO);
+			cube->CPEOCN=(((0xfUL<<58)&cube->CPEOCN)>>4)|
+				(((0xfUL<<42)&cube->CPEOCN)<<16)|
+				(((0xfUL<<38)&cube->CPEOCN)<<4)|
+				(((0xfUL<<54)&cube->CPEOCN)>>16)|
+				((0x3UL<<28)&cube->CPEOCN)>>10|
+				((0x3UL<<26)&cube->CPEOCN)>>16|
+				((((0x1UL<<24)&cube->CPEOCN)<<1)^((0x3UL<<24)&cube->CPEOCN))|
+				((0x3UL<<22)&cube->CPEOCN)<<4|
+				((0x3UL<<20)&cube->CPEOCN)<<8|
+				((0x3UL<<18)&cube->CPEOCN)>>6|
+				((((0x1UL<<16)&cube->CPEOCN)<<1)^((0x3UL<<16)&cube->CPEOCN))|
+				((((0x1UL<<14)&cube->CPEOCN)<<1)^((0x3UL<<14)&cube->CPEOCN))|
+				((0x3UL<<12)&cube->CPEOCN)<<8|
+				((0x3UL<<10)&cube->CPEOCN)>>4|
+				((((0x1UL<<8)&cube->CPEOCN)<<1)^((0x3UL<<8)&cube->CPEOCN))|
+				((0x3UL<<6)&cube->CPEOCN)<<16|
+				(0b111&centersWrap[0b111&cube->CPEOCN])<<3|
+				(0b111000&cube->CPEOCN)>>3|
+				(0x003fc03fc0000000&cube->CPEOCN);
+			break;
 
-	// f
-	//0011 1111 1100 0000 0011 1111 1100 0000 0000 0000 0000 0000 0000 0000 0000 0000
-	//0011 1111 1100 0000 0011 1111 1100 0000 0011 0000 0011 1100 0011 0000 0000 0000
-	
+	/*	//0001 0010 0011 0100 0101 0110 0111 1000 1001 1010 1011 1100 11 11 11 11 11 11 11 11 
+	cube->EPCO=0b0001001000110100010101100111100010011010101111001111111111111111;
+	//0001 0010 0011 0100 0101 0110 0111 1000 11 11 11 11 11 11 11 11 11 11 11 11 001 010
+	cube->CPEOCN=0b00010010001101000101011001111000111111111111111111111111001010;
+}*/
 
-
+	//0000 0000 0011 1111 1100 0000 0011 1111 1100 0011 0000 0011 1100 0011 00xx xxxx 
 
 	}	
 }
 
 char *readableSequence(uint64_t sequence) {
-	char *moves[33]={"U ","U2 ","U' ","D ","D2 ","D' ",
+	char *moves[54]={"U ","U2 ","U' ","D ","D2 ","D' ",
 		"R ","R2 ","R' ","L ","L2 ","L' ",
 		"F ","F2 ","F' ","B ","B2 ","B' ",
 		"E ","E2 ","E' ","M ","M2 ","M' ",
 		"S ","S2 ","S' ","u ","u2 ","u' ",
-		"d ","d2 ","d' "};
+		"d ","d2 ","d' ","r ","r2 ","r' ",
+		"l ","l2 ","l' ","f ","f2 ","f' ",
+		"b ","b2 ","b' ","y ","y2 ","y' ",
+		"x ","x2 ","x' ","z ","z2 ","z' "};
 	int place=0;
 	char *out=malloc(99);
 	for (int i=0; i<=10; i++) {
@@ -2216,50 +2316,41 @@ bool parseInputFile(char * file, struct METHOD * method){
 				tempStep->CPEOCNmask=tempStep->CPEOCNmask|(parseNumber(v));
 			}		
 			if (strcmp(v,"endstep")==0){
-				
 				struct STEP *step=(struct STEP*)calloc(1,sizeof(struct STEP));
 				initStep(step,tempStep->name,tempStep->movegroup,tempStep->tableDepth,tempStep->searchDepth,tempStep->EPCOmask,tempStep->CPEOCNmask,NULL);
-
 				struct STEP *stepIterator=stepList;
 				while (stepIterator->listnext!=NULL){
 					stepIterator=stepIterator->listnext;
 				}
 				stepIterator->listnext=step;
-
 			}		
 			if (strcmp(v,"all")==0){
 				isAll=1;
 			}
 			else if (isAll){
-	
 				if (strcmp(v,"endall")==0){
 					isAll=0;
 					break;
 				}		
-				
 				struct STEP *stepIterator=stepList;
 				while (strcmp(stepIterator->name,v)){
 					stepIterator=stepIterator->listnext;
 				}
-			
 				if (firstStep){
 					initMethod(method,methodName,stepIterator);
 					firstStep=0;
 				}
 				else{
-		
 					struct STEP *stepIteratorOld=stepList;
 					while (strcmp(stepIteratorOld->name,w)){
 						stepIteratorOld=stepIteratorOld->listnext;
 					}
 					stepIteratorOld->next=stepIterator;
 				}
-
 				if (strcmp(v,"endall")==0){
 					isAll=0;
 				}
 			}
-
 			strcpy(w,v);
 		}		
 		fclose(f);

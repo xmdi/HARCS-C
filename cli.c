@@ -26,7 +26,7 @@ printf(	"  ,ggg,        gg            ,ggg,   ,ggggggggggg,        ,gggg,       
 }
 
 void info() {
-	printf("\n\tHARCS v2.0pre : 05-01-2021 : Matt DiPalma : USA\n\n");
+	printf("\n\tHARCS v2.0pre : 10-02-2021 : Matt DiPalma : USA\n\n");
 }
 
 void cursor() {
@@ -102,7 +102,7 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 	else if (strcmp(buffer,"debug")==0){
 
 	}
-else if (strcmp(buffer,"petrus")==0){	
+	/*else if (strcmp(buffer,"petrus")==0){	
 		struct STEP *s3x2x2=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
 		struct STEP *sEO=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
 		struct STEP *sF2L=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
@@ -110,7 +110,7 @@ else if (strcmp(buffer,"petrus")==0){
 		initStep(s3x2x2,"3x2x2",1,6,6,0x0000f00ff0ff00c3,0x00003c03c030f3ff,sEO);
 		initStep(sEO,"EO",2,6,3,0x0000f00ff0ff00c3,0x00003c03ffffffff,sF2L);
 		initStep(sF2L,"F2L",3,7,6,0x0000ffffffff00ff,0x00003fffffffffff,NULL);
-	}
+	}*/
 	else if (strcmp(buffer,"solve")==0){	
 		struct STEP *step=(struct STEP*)malloc(sizeof(struct STEP)); // probably need to malloc all this to keep it alive	
 		step=method->first;
