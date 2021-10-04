@@ -26,7 +26,7 @@ printf(	"  ,ggg,        gg            ,ggg,   ,ggggggggggg,        ,gggg,       
 }
 
 void info() {
-	printf("\n\tHARCS v2.0pre : 10-02-2021 : Matt DiPalma : USA\n\n");
+	printf("\n\tHARCS v2.0pre : 10-03-2021 : Matt DiPalma : USA\n\n");
 }
 
 void cursor() {
