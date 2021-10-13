@@ -26,7 +26,7 @@ printf(	"  ,ggg,        gg            ,ggg,   ,ggggggggggg,        ,gggg,       
 }
 
 void info() {
-	printf("\n\tHARCS v2.0pre : 10-03-2021 : Matt DiPalma : USA\n\n");
+	printf("\n\tHARCS v2.0pre : 10-07-2021 : Matt DiPalma : USA\n\n");
 }
 
 void cursor() {
@@ -37,7 +37,7 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 
 	if (strcmp(buffer,"info")==0)
 		info();
-	else if (strcmp(buffer,"clear")==0)
+	else if (strcmp(buffer,"clc")==0)
 		clear();
 	else if (strcmp(buffer,"benchmark")==0){
 		benchmarkMoves();
@@ -100,6 +100,23 @@ void execute(char* buffer, struct CUBE* basecube, struct METHOD* method, struct 
 		printf("\n\tRandom state applied.\n");
 		}
 	else if (strcmp(buffer,"debug")==0){
+
+	}
+	else if (strcmp(buffer,"clear")==0){
+		if (method->first==NULL){
+			printf("\n\tNo method loaded.\n");
+		}
+		else {
+			struct STEP *it=(struct STEP*)malloc(sizeof(struct STEP));
+			struct STEP *this=(struct STEP*)malloc(sizeof(struct STEP));
+			it=method->first;
+			while ((this=it)!=NULL){
+				it=it->next;
+				//free(this->ht_t);
+				free(this);
+			}
+			method->first=NULL;
+		}
 
 	}
 	/*else if (strcmp(buffer,"petrus")==0){	
